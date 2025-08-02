@@ -14,6 +14,7 @@ interface Release {
   totalTracks?: number
   artists?: string
   views?: number
+  isNew?: boolean // Added for "NEU" badge
 }
 
 interface PlatformStats {
@@ -29,6 +30,11 @@ interface PlatformStats {
     connected: boolean
   }
   appleMusic?: {
+    followers: number
+    name: string
+    connected: boolean
+  }
+  amazonMusic?: {
     followers: number
     name: string
     connected: boolean
@@ -66,7 +72,12 @@ export function useMusicData(): MusicData {
       const data = await response.json()
 
       if (data.releases) {
-        setReleases(data.releases || [])
+        // Mark releases as new if they are recent (e.g., within the last 30 days)
+        const updatedReleases = data.releases.map((release: Release) => ({
+          ...release,
+          isNew: new Date(release.releaseDate) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        }))
+        setReleases(updatedReleases || [])
         setPlatformStats(data.platformStats || {})
 
         // Get artist data from Spotify if available

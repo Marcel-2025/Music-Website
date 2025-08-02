@@ -1,6 +1,4 @@
 "use client"
-
-import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -20,6 +18,7 @@ import {
   Loader2,
   Eye,
 } from "lucide-react"
+import { useMusicData } from "@/hooks/use-music-data"
 
 interface Release {
   id: string
@@ -33,6 +32,7 @@ interface Release {
   totalTracks?: number
   artists?: string
   views?: number
+  isNew?: boolean
 }
 
 interface PlatformStats {
@@ -52,6 +52,11 @@ interface PlatformStats {
     name: string
     connected: boolean
   }
+  amazonMusic?: {
+    followers: number
+    name: string
+    connected: boolean
+  }
 }
 
 interface ArtistData {
@@ -63,45 +68,7 @@ interface ArtistData {
 }
 
 export default function EhhmsPortfolio() {
-  const [releases, setReleases] = useState<Release[]>([])
-  const [platformStats, setPlatformStats] = useState<PlatformStats>({})
-  const [artistData, setArtistData] = useState<ArtistData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    fetchAllData()
-  }, [])
-
-  const fetchAllData = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch("/api/releases")
-      const data = await response.json()
-
-      if (data.releases) {
-        setReleases(data.releases || [])
-        setPlatformStats(data.platformStats || {})
-
-        // Get artist data from Spotify if available
-        if (data.platformStats?.spotify?.connected) {
-          const spotifyResponse = await fetch("/api/spotify")
-          const spotifyData = await spotifyResponse.json()
-          if (spotifyData.success) {
-            setArtistData(spotifyData.artist)
-          }
-        }
-        setError(null)
-      } else {
-        setError(data.error || "Failed to fetch release data")
-      }
-    } catch (err) {
-      setError("Failed to connect to APIs")
-      console.error("API fetch error:", err)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { releases, platformStats, artistData, loading, error, refetch: fetchAllData } = useMusicData()
 
   const socialLinks = [
     { name: "Instagram", icon: Instagram, url: "https://instagram.com/ehhm.s", handle: "@ehhm.s" },
@@ -119,6 +86,8 @@ export default function EhhmsPortfolio() {
         return Youtube
       case "Apple Music":
         return Apple
+      case "Amazon Music":
+        return Music
       default:
         return Music
     }
@@ -132,6 +101,8 @@ export default function EhhmsPortfolio() {
         return "text-red-400"
       case "Apple Music":
         return "text-gray-400"
+      case "Amazon Music":
+        return "text-orange-400"
       default:
         return "text-purple-400"
     }
@@ -175,6 +146,7 @@ export default function EhhmsPortfolio() {
   const spotifyReleases = releases.filter((r) => r.platform === "Spotify")
   const youtubeReleases = releases.filter((r) => r.platform === "YouTube")
   const appleMusicReleases = releases.filter((r) => r.platform === "Apple Music")
+  const amazonMusicReleases = releases.filter((r) => r.platform === "Amazon Music")
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
@@ -211,7 +183,7 @@ export default function EhhmsPortfolio() {
         <div className="container mx-auto text-center">
           <div className="mb-8">
             <Image
-              src={artistData?.image || "/placeholder.svg?height=200&width=200"}
+              src={artistData?.image || "/placeholder.svg?height=200&width=200&query=ehhms artist photo"}
               alt={`${artistData?.name || "Ehhm.s"} Artist Photo`}
               width={200}
               height={200}
@@ -246,6 +218,14 @@ export default function EhhmsPortfolio() {
                   <Apple className="w-5 h-5 text-gray-400" />
                   <span className="text-gray-400 font-semibold">
                     {platformStats.appleMusic.followers.toLocaleString()} Apple Music Followers
+                  </span>
+                </div>
+              )}
+              {platformStats.amazonMusic?.connected && (
+                <div className="flex items-center gap-2">
+                  <Music className="w-5 h-5 text-orange-400" />
+                  <span className="text-orange-400 font-semibold">
+                    {platformStats.amazonMusic.followers.toLocaleString()} Amazon Music Followers
                   </span>
                 </div>
               )}
@@ -506,6 +486,81 @@ export default function EhhmsPortfolio() {
             </div>
           )}
 
+          {/* Amazon Music Releases Section */}
+          {amazonMusicReleases.length > 0 && (
+            <div className="mb-12">
+              <div className="flex items-center gap-3 mb-6">
+                <Music className="w-8 h-8 text-orange-400" />
+                <h4 className="text-2xl font-semibold text-white">Amazon Music Releases</h4>
+                <Badge variant="outline" className="text-orange-400 border-orange-400">
+                  {amazonMusicReleases.length} Tracks/Albums
+                </Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {amazonMusicReleases.map((release) => {
+                  const PlatformIcon = getPlatformIcon(release.platform)
+                  const platformColor = getPlatformColor(release.platform)
+                  return (
+                    <Card
+                      key={`${release.platform}-${release.id}`}
+                      className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-all duration-300 group"
+                    >
+                      <CardContent className="p-0">
+                        <div className="relative">
+                          <Image
+                            src={release.image || "/placeholder.svg?height=300&width=300"}
+                            alt={release.title}
+                            width={300}
+                            height={300}
+                            className="w-full aspect-square object-cover rounded-t-lg"
+                          />
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-t-lg flex items-center justify-center">
+                            <Button asChild size="lg" className="bg-white/20 hover:bg-white/30 backdrop-blur-sm">
+                              <Link href={release.link} target="_blank" rel="noopener noreferrer">
+                                <Play className="w-6 h-6 mr-2" />
+                                Listen
+                              </Link>
+                            </Button>
+                          </div>
+                          {release.isNew && (
+                            <Badge className="absolute top-3 right-3 bg-black/70 text-white">NEU</Badge>
+                          )}
+                          <div className="absolute top-3 left-3">
+                            <PlatformIcon className={`w-6 h-6 ${platformColor}`} />
+                          </div>
+                        </div>
+                        <div className="p-4">
+                          <div className="flex items-center gap-2 mb-1">
+                            <PlatformIcon className={`w-5 h-5 ${platformColor}`} />
+                            <span className="text-sm text-gray-400">{release.platform}</span>
+                          </div>
+                          <h4 className="text-lg font-semibold text-white line-clamp-2">{release.title}</h4>
+                          <p className="text-sm text-gray-400 mb-2">by {release.artists}</p>
+                          <div className="flex justify-between items-center text-sm text-gray-400 mb-3">
+                            <span>{new Date(release.releaseDate).getFullYear()}</span>
+                            <span className="flex items-center gap-1">
+                              <Music className="w-3 h-3" />
+                              {release.streams}
+                            </span>
+                          </div>
+                          <Button
+                            asChild
+                            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+                          >
+                            <Link href={release.link} target="_blank" rel="noopener noreferrer">
+                              Listen on Amazon Music
+                              <ExternalLink className="w-4 h-4 ml-2" />
+                            </Link>
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {releases.length === 0 && (
             <div className="text-center py-12">
               <Music className="w-16 h-16 text-gray-600 mx-auto mb-4" />
@@ -576,26 +631,56 @@ export default function EhhmsPortfolio() {
             </div>
 
             {/* Apple Music */}
-            <div className="text-center opacity-50">
-              <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3">
+            <div className="text-center">
+              <div
+                className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 ${
+                  platformStats.appleMusic?.connected ? "bg-gray-500" : "bg-gray-600"
+                }`}
+              >
                 <Apple className="w-8 h-8 text-white" />
               </div>
               <h4 className="text-white font-semibold">Apple Music</h4>
-              <p className="text-gray-400 text-sm">Not Connected</p>
-              <Badge variant="outline" className="text-gray-400 border-gray-400 mt-2">
-                Setup Available
+              <p className="text-gray-400 text-sm">
+                {platformStats.appleMusic?.connected
+                  ? `${platformStats.appleMusic.followers.toLocaleString()} Followers`
+                  : "Not Connected"}
+              </p>
+              <Badge
+                variant="outline"
+                className={
+                  platformStats.appleMusic?.connected
+                    ? "text-gray-400 border-gray-400 mt-2"
+                    : "text-gray-400 border-gray-400 mt-2"
+                }
+              >
+                {platformStats.appleMusic?.connected ? "✅ Live Data" : "❌ Setup Available"}
               </Badge>
             </div>
 
             {/* Amazon Music */}
-            <div className="text-center opacity-50">
-              <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-3">
+            <div className="text-center">
+              <div
+                className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 ${
+                  platformStats.amazonMusic?.connected ? "bg-orange-500" : "bg-gray-600"
+                }`}
+              >
                 <Music className="w-8 h-8 text-white" />
               </div>
               <h4 className="text-white font-semibold">Amazon Music</h4>
-              <p className="text-gray-400 text-sm">Not Available</p>
-              <Badge variant="outline" className="text-gray-400 border-gray-400 mt-2">
-                No Public API
+              <p className="text-gray-400 text-sm">
+                {platformStats.amazonMusic?.connected
+                  ? `${platformStats.amazonMusic.followers.toLocaleString()} Followers`
+                  : "Not Connected"}
+              </p>
+              <Badge
+                variant="outline"
+                className={
+                  platformStats.amazonMusic?.connected
+                    ? "text-orange-400 border-orange-400 mt-2"
+                    : "text-gray-400 border-gray-400 mt-2"
+                }
+              >
+                {platformStats.amazonMusic?.connected ? "✅ Live Data" : "❌ Not Available"}
               </Badge>
             </div>
           </div>
@@ -645,6 +730,10 @@ export default function EhhmsPortfolio() {
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 bg-gray-500 rounded-full"></span>
               Apple Music Available
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+              Amazon Music Available
             </span>
           </div>
         </div>

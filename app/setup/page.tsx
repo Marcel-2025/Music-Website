@@ -3,237 +3,326 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { Loader2, CheckCircle, XCircle, Search, AirplayIcon as Spotify } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { AirplayIcon as Spotify, Search, Loader2, CheckCircle, XCircle } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
+import { useToast } from "@/hooks/use-toast"
 
-interface SetupStatus {
-  spotify: {
-    clientIdConfigured: boolean
-    clientSecretConfigured: boolean
-    artistIdConfigured: boolean
-    allConfigured: boolean
-    artistId: string | null
-  }
-}
-
-interface ArtistResult {
+interface Artist {
   id: string
   name: string
-  genres: string[]
+  followers: number
   popularity: number
-  image: string
+  genres: string[]
+  image: string | null
+  spotifyUrl: string
 }
 
 export default function SetupPage() {
-  const [loading, setLoading] = useState(true)
-  const [status, setStatus] = useState<SetupStatus | null>(null)
+  const [clientId, setClientId] = useState("")
+  const [clientSecret, setClientSecret] = useState("")
+  const [artistId, setArtistId] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
-  const [searchResults, setSearchResults] = useState<ArtistResult[]>([])
+  const [searchResults, setSearchResults] = useState<Artist[]>([])
+  const [loading, setLoading] = useState(false)
   const [searchLoading, setSearchLoading] = useState(false)
-  const [searchError, setSearchError] = useState<string | null>(null)
-  const [selectedArtistId, setSelectedArtistId] = useState<string | null>(null)
-
-  const fetchSetupStatus = async () => {
-    setLoading(true)
-    try {
-      const response = await fetch("/api/setup-check")
-      const data: SetupStatus = await response.json()
-      setStatus(data)
-      setSelectedArtistId(data.spotify.artistId) // Pre-fill if already configured
-    } catch (error) {
-      console.error("Failed to fetch setup status:", error)
-      setStatus(null)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle")
+  const [currentConfig, setCurrentConfig] = useState<{
+    clientId: boolean
+    clientSecret: boolean
+    artistId: boolean
+  }>({
+    clientId: false,
+    clientSecret: false,
+    artistId: false,
+  })
+  const { toast } = useToast()
 
   useEffect(() => {
-    fetchSetupStatus()
+    checkCurrentConfig()
   }, [])
 
+  const checkCurrentConfig = async () => {
+    const res = await fetch("/api/setup-check")
+    const data = await res.json()
+    setCurrentConfig({
+      clientId: data.spotify.clientId,
+      clientSecret: data.spotify.clientSecret,
+      artistId: data.spotify.artistId,
+    })
+  }
+
   const handleSearch = async () => {
-    if (!searchQuery) return
+    if (!searchQuery) {
+      toast({
+        title: "Search Error",
+        description: "Please enter an artist name to search.",
+        type: "error",
+      })
+      return
+    }
     setSearchLoading(true)
-    setSearchError(null)
     try {
-      const response = await fetch(`/api/spotify/search-artist?query=${encodeURIComponent(searchQuery)}`)
-      const data = await response.json()
+      const res = await fetch(`/api/spotify/search-artist?query=${encodeURIComponent(searchQuery)}`)
+      const data = await res.json()
       if (data.success) {
         setSearchResults(data.artists)
       } else {
-        setSearchError(data.error || "Failed to search artists.")
+        toast({
+          title: "Search Failed",
+          description: data.error || "Could not search for artists. Check your Client ID and Secret.",
+          type: "error",
+        })
+        setSearchResults([])
       }
     } catch (error) {
-      setSearchError("An error occurred during search.")
       console.error("Search error:", error)
+      toast({
+        title: "Search Error",
+        description: "An unexpected error occurred during search.",
+        type: "error",
+      })
     } finally {
       setSearchLoading(false)
     }
   }
 
-  const handleSaveArtistId = async () => {
-    if (!selectedArtistId) return
-    // In a real application, you would save this to your database or a persistent store.
-    // For this demo, we'll just update the local state and simulate success.
-    alert(
-      `Spotify Artist ID saved: ${selectedArtistId}. Please update your Vercel environment variable SPOTIFY_ARTIST_ID.`,
-    )
-    await fetchSetupStatus() // Re-fetch status to reflect potential changes
-  }
+  const handleTestConnection = async () => {
+    setLoading(true)
+    try {
+      // Temporarily set environment variables for the test if provided
+      const testParams = new URLSearchParams()
+      if (clientId) testParams.append("SPOTIFY_CLIENT_ID", clientId)
+      if (clientSecret) testParams.append("SPOTIFY_CLIENT_SECRET", clientSecret)
+      if (artistId) testParams.append("SPOTIFY_ARTIST_ID", artistId)
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
-        <p className="text-white ml-4">Loading setup status...</p>
-      </div>
-    )
+      const res = await fetch(`/api/spotify?${testParams.toString()}`)
+      const data = await res.json()
+
+      if (data.success) {
+        setStatus("success")
+        toast({
+          title: "Connection Successful!",
+          description: `Connected to Spotify artist: ${data.artist.name}`,
+          type: "success",
+        })
+      } else {
+        setStatus("error")
+        toast({
+          title: "Connection Failed",
+          description: data.error || "Please check your Client ID, Client Secret, and Artist ID.",
+          type: "error",
+        })
+      }
+    } catch (error) {
+      console.error("Test connection error:", error)
+      setStatus("error")
+      toast({
+        title: "Connection Error",
+        description: "An unexpected error occurred during connection test.",
+        type: "error",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white p-4 flex flex-col items-center justify-center">
-      <Card className="w-full max-w-2xl bg-gray-800/50 border-gray-700">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-white flex items-center gap-2">
-            <Spotify className="w-6 h-6 text-green-500" /> Spotify Setup
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="spotify-client-id-status" className="text-lg">
-              Spotify Client ID (SPOTIFY_CLIENT_ID)
-            </Label>
-            {status?.spotify.clientIdConfigured ? (
-              <span className="flex items-center text-green-400">
-                <CheckCircle className="w-5 h-5 mr-2" /> Configured
-              </span>
-            ) : (
-              <span className="flex items-center text-red-400">
-                <XCircle className="w-5 h-5 mr-2" /> Not Configured
-              </span>
-            )}
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-8 text-white">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <Spotify className="w-16 h-16 text-green-500 mx-auto mb-4" />
+          <h1 className="text-4xl font-bold mb-2">Spotify Integration Setup</h1>
+          <p className="text-gray-300">Configure your Spotify API credentials to fetch live artist data.</p>
+        </div>
 
-          <div className="flex items-center justify-between">
-            <Label htmlFor="spotify-client-secret-status" className="text-lg">
-              Spotify Client Secret (SPOTIFY_CLIENT_SECRET)
-            </Label>
-            {status?.spotify.clientSecretConfigured ? (
-              <span className="flex items-center text-green-400">
-                <CheckCircle className="w-5 h-5 mr-2" /> Configured
-              </span>
-            ) : (
-              <span className="flex items-center text-red-400">
-                <XCircle className="w-5 h-5 mr-2" /> Not Configured
-              </span>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            <Label htmlFor="spotify-artist-id" className="text-lg">
-              Spotify Artist ID (SPOTIFY_ARTIST_ID)
-            </Label>
-            <div className="flex gap-2">
-              <Input
-                id="spotify-artist-id"
-                placeholder="Enter Spotify Artist ID or search below"
-                value={selectedArtistId || ""}
-                onChange={(e) => setSelectedArtistId(e.target.value)}
-                className="bg-gray-700 border-gray-600 text-white"
-              />
-              <Button
-                onClick={handleSaveArtistId}
-                disabled={!selectedArtistId}
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                Save ID
-              </Button>
-            </div>
-            {status?.spotify.artistIdConfigured ? (
-              <p className="flex items-center text-green-400 text-sm">
-                <CheckCircle className="w-4 h-4 mr-1" /> Artist ID is configured.
+        <Card className="bg-gray-800 border-gray-700 mb-8">
+          <CardHeader>
+            <CardTitle className="text-white">1. Enter Spotify API Credentials</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-gray-400 text-sm">
+                You need a Spotify Developer account to get these. Create an application and find your Client ID and
+                Client Secret.
               </p>
-            ) : (
-              <p className="flex items-center text-red-400 text-sm">
-                <XCircle className="w-4 h-4 mr-1" /> Artist ID is not configured. Please set it in Vercel.
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            <Label htmlFor="artist-search" className="text-lg">
-              Search Spotify Artist
-            </Label>
-            <div className="flex gap-2">
-              <Input
-                id="artist-search"
-                placeholder="Search by artist name"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-gray-700 border-gray-600 text-white"
-                disabled={!status?.spotify.clientIdConfigured || !status?.spotify.clientSecretConfigured}
-              />
-              <Button
-                onClick={handleSearch}
-                disabled={
-                  searchLoading || !status?.spotify.clientIdConfigured || !status?.spotify.clientSecretConfigured
-                }
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {searchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                <span className="ml-2">Search</span>
-              </Button>
-            </div>
-            {(!status?.spotify.clientIdConfigured || !status?.spotify.clientSecretConfigured) && (
-              <p className="text-red-400 text-sm">
-                Please configure `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` to enable artist search.
-              </p>
-            )}
-            {searchError && <p className="text-red-400 text-sm">{searchError}</p>}
-            {searchResults.length > 0 && (
-              <div className="mt-4 space-y-2 max-h-60 overflow-y-auto pr-2">
-                {searchResults.map((artist) => (
-                  <Card
-                    key={artist.id}
-                    className="bg-gray-700 border-gray-600 flex items-center p-3 cursor-pointer hover:bg-gray-600 transition-colors"
-                    onClick={() => setSelectedArtistId(artist.id)}
-                  >
-                    <img
-                      src={artist.image || "/placeholder.svg?height=48&width=48"}
-                      alt={artist.name}
-                      className="w-12 h-12 rounded-full mr-4 object-cover"
-                    />
-                    <div>
-                      <p className="font-semibold text-white">{artist.name}</p>
-                      <p className="text-sm text-gray-400 line-clamp-1">{artist.genres.join(", ")}</p>
-                    </div>
-                  </Card>
-                ))}
+              <div className="flex items-center gap-2">
+                <Label htmlFor="clientId" className="sr-only">
+                  Client ID
+                </Label>
+                <Input
+                  id="clientId"
+                  placeholder="Your Spotify Client ID"
+                  value={clientId}
+                  onChange={(e) => setClientId(e.target.value)}
+                  className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
+                />
+                {currentConfig.clientId ? (
+                  <CheckCircle className="w-6 h-6 text-green-500" />
+                ) : (
+                  <XCircle className="w-6 h-6 text-red-500" />
+                )}
               </div>
-            )}
-          </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="clientSecret" className="sr-only">
+                  Client Secret
+                </Label>
+                <Input
+                  id="clientSecret"
+                  type="password"
+                  placeholder="Your Spotify Client Secret"
+                  value={clientSecret}
+                  onChange={(e) => setClientSecret(e.target.value)}
+                  className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
+                />
+                {currentConfig.clientSecret ? (
+                  <CheckCircle className="w-6 h-6 text-green-500" />
+                ) : (
+                  <XCircle className="w-6 h-6 text-red-500" />
+                )}
+              </div>
+              <p className="text-xs text-gray-500">
+                Note: For production, set these as `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` environment variables
+                in Vercel.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
-          <div className="flex justify-between items-center pt-4 border-t border-gray-700">
-            <Link href="/dashboard">
-              <Button variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700 bg-transparent">
-                Back to Dashboard
+        <Card className="bg-gray-800 border-gray-700 mb-8">
+          <CardHeader>
+            <CardTitle className="text-white">2. Find Your Spotify Artist ID</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-gray-400 text-sm">
+                You can find your Artist ID by searching for your artist name below, or directly from your Spotify
+                artist page URL.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="Search artist by name"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
+                />
+                <Button
+                  onClick={handleSearch}
+                  disabled={searchLoading || !clientId || !clientSecret}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {searchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                  <span className="sr-only">Search</span>
+                </Button>
+              </div>
+
+              {searchResults.length > 0 && (
+                <div className="mt-4 space-y-3 max-h-60 overflow-y-auto pr-2">
+                  {searchResults.map((artist) => (
+                    <div
+                      key={artist.id}
+                      className="flex items-center gap-3 p-3 bg-gray-700 rounded-md cursor-pointer hover:bg-gray-600 transition-colors"
+                      onClick={() => {
+                        setArtistId(artist.id)
+                        setSearchQuery(artist.name) // Set search query to artist name for better UX
+                        setSearchResults([]) // Clear search results after selection
+                      }}
+                    >
+                      {artist.image && (
+                        <Image
+                          src={artist.image || "/placeholder.svg"}
+                          alt={artist.name}
+                          width={40}
+                          height={40}
+                          className="rounded-full"
+                        />
+                      )}
+                      <div>
+                        <p className="font-semibold text-white">{artist.name}</p>
+                        <p className="text-xs text-gray-400">Followers: {artist.followers.toLocaleString()}</p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="ml-auto text-green-400 border-green-400 hover:bg-green-900/20 bg-transparent"
+                      >
+                        Select
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 mt-4">
+                <Label htmlFor="artistId" className="sr-only">
+                  Artist ID
+                </Label>
+                <Input
+                  id="artistId"
+                  placeholder="Your Spotify Artist ID"
+                  value={artistId}
+                  onChange={(e) => setArtistId(e.target.value)}
+                  className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
+                />
+                {currentConfig.artistId ? (
+                  <CheckCircle className="w-6 h-6 text-green-500" />
+                ) : (
+                  <XCircle className="w-6 h-6 text-red-500" />
+                )}
+              </div>
+              <p className="text-xs text-gray-500">
+                Note: For production, set this as `SPOTIFY_ARTIST_ID` environment variable in Vercel.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-center gap-4 mb-8">
+          <Button
+            onClick={handleTestConnection}
+            disabled={loading || !clientId || !clientSecret || !artistId}
+            className="bg-purple-600 hover:bg-purple-700 text-white text-lg px-8 py-3"
+          >
+            {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+            Test Connection
+          </Button>
+        </div>
+
+        {status === "success" && (
+          <Card className="bg-green-900/20 border-green-500/30 mb-8">
+            <CardContent className="p-6 text-center">
+              <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-green-300 mb-2">Spotify Connected Successfully!</h3>
+              <p className="text-green-200 mb-4">Your Spotify data should now appear on the dashboard.</p>
+              <Button asChild className="bg-green-600 hover:bg-green-700">
+                <Link href="/dashboard">Go to Dashboard</Link>
               </Button>
-            </Link>
-            {status?.spotify.allConfigured ? (
-              <span className="flex items-center text-green-400 font-semibold">
-                <CheckCircle className="w-5 h-5 mr-2" /> Spotify is fully configured!
-              </span>
-            ) : (
-              <span className="flex items-center text-red-400 font-semibold">
-                <XCircle className="w-5 h-5 mr-2" /> Spotify setup incomplete.
-              </span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        )}
+
+        {status === "error" && (
+          <Card className="bg-red-900/20 border-red-500/30 mb-8">
+            <CardContent className="p-6 text-center">
+              <XCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-red-300 mb-2">Connection Failed</h3>
+              <p className="text-red-200 mb-4">Please review your credentials and Artist ID and try again.</p>
+              <Button onClick={handleTestConnection} className="bg-red-600 hover:bg-red-700">
+                Retry Connection
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="text-center mt-8">
+          <Link href="/dashboard" className="text-gray-400 hover:underline text-sm">
+            Back to Dashboard
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }

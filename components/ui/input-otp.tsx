@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { OTPInput, Slot, type OTPInputProps } from "input-otp"
-import { Dot } from "lucide-react"
+import { Minus } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -31,8 +31,7 @@ const InputOTPSlot = React.forwardRef<
     ref={ref}
     index={index}
     className={cn(
-      "relative flex h-9 w-9 items-center justify-center border-y border-r border-input text-sm shadow-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md",
-      "focus-within:z-10 focus-within:ring-1 focus-within:ring-ring",
+      "relative flex h-9 w-9 items-center justify-center border-y border-r border-input text-sm shadow-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md focus:z-10 group-data-[focused]:group-data-[filled]:bg-accent group-data-[focused]:group-data-[filled]:text-accent-foreground group-data-[focused]:group-data-[filled]:focus:outline-none group-data-[focused]:group-data-[filled]:focus:ring-2 group-data-[focused]:group-data-[filled]:focus:ring-ring group-data-[focused]:group-data-[filled]:focus:ring-offset-2",
       className,
     )}
     {...props}
@@ -41,9 +40,9 @@ const InputOTPSlot = React.forwardRef<
 InputOTPSlot.displayName = "InputOTPSlot"
 
 const InputOTPSeparator = React.forwardRef<React.ElementRef<"div">, React.HTMLAttributes<HTMLDivElement>>(
-  ({ ...props }, ref) => (
-    <div ref={ref} role="separator" {...props}>
-      <Dot />
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn("flex items-center justify-center", className)} {...props}>
+      <Minus />
     </div>
   ),
 )

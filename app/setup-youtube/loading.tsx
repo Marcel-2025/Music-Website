@@ -1,10 +1,12 @@
 import { Loader2 } from "lucide-react"
 
-export default function SetupYoutubeLoading() {
+export default function Loading() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
-      <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
-      <p className="text-white ml-4">Loading YouTube setup page...</p>
+      <div className="text-center">
+        <Loader2 className="w-8 h-8 animate-spin text-red-500 mx-auto mb-4" />
+        <p className="text-white text-xl">Loading YouTube setup...</p>
+      </div>
     </div>
   )
 }

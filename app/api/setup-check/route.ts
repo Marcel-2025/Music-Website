@@ -11,29 +11,29 @@ export async function GET() {
   const appleMusicTeamId = process.env.APPLE_MUSIC_TEAM_ID
   const appleMusicArtistId = process.env.APPLE_MUSIC_ARTIST_ID
 
-  const configStatus = {
+  const status = {
     spotify: {
-      clientIdConfigured: !!spotifyClientId,
-      clientSecretConfigured: !!spotifyClientSecret,
-      artistIdConfigured: !!spotifyArtistId,
-      allConfigured: !!spotifyClientId && !!spotifyClientSecret && !!spotifyArtistId,
-      artistId: spotifyArtistId || null, // Expose non-sensitive ID for client-side display/search
+      clientId: !!spotifyClientId,
+      clientSecret: !!spotifyClientSecret,
+      artistId: !!spotifyArtistId,
+      configured: !!spotifyClientId && !!spotifyClientSecret && !!spotifyArtistId,
     },
     youtube: {
-      apiKeyConfigured: !!youtubeApiKey,
-      channelIdConfigured: !!youtubeChannelId,
-      allConfigured: !!youtubeApiKey && !!youtubeChannelId,
-      channelId: youtubeChannelId || null, // Expose non-sensitive ID for client-side display/search
+      apiKey: !!youtubeApiKey,
+      channelId: !!youtubeChannelId,
+      configured: !!youtubeApiKey && !!youtubeChannelId,
     },
     appleMusic: {
-      privateKeyConfigured: !!appleMusicPrivateKey,
-      keyIdConfigured: !!appleMusicKeyId,
-      teamIdConfigured: !!appleMusicTeamId,
-      artistIdConfigured: !!appleMusicArtistId,
-      allConfigured: !!appleMusicPrivateKey && !!appleMusicKeyId && !!appleMusicTeamId && !!appleMusicArtistId,
-      artistId: appleMusicArtistId || null, // Expose non-sensitive ID
+      privateKey: !!appleMusicPrivateKey,
+      keyId: !!appleMusicKeyId,
+      teamId: !!appleMusicTeamId,
+      artistId: !!appleMusicArtistId,
+      configured: !!appleMusicPrivateKey && !!appleMusicKeyId && !!appleMusicTeamId && !!appleMusicArtistId,
+    },
+    amazonMusic: {
+      configured: true, // Amazon Music has no public API, so we assume it's "configured" for mock data
     },
   }
 
-  return NextResponse.json(configStatus)
+  return NextResponse.json(status)
 }

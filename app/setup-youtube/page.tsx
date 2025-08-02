@@ -3,216 +3,296 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { Loader2, CheckCircle, XCircle, Search, Youtube } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Youtube, Search, Loader2, CheckCircle, XCircle } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
+import { useToast } from "@/hooks/use-toast"
 
-interface SetupStatus {
-  youtube: {
-    apiKeyConfigured: boolean
-    channelIdConfigured: boolean
-    allConfigured: boolean
-    channelId: string | null
-  }
-}
-
-interface ChannelResult {
+interface Channel {
   id: string
-  title: string
+  name: string
   description: string
-  thumbnail: string
+  image: string | null
+  youtubeUrl: string
 }
 
 export default function SetupYoutubePage() {
-  const [loading, setLoading] = useState(true)
-  const [status, setStatus] = useState<SetupStatus | null>(null)
+  const [apiKey, setApiKey] = useState("")
+  const [channelId, setChannelId] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
-  const [searchResults, setSearchResults] = useState<ChannelResult[]>([])
+  const [searchResults, setSearchResults] = useState<Channel[]>([])
+  const [loading, setLoading] = useState(false)
   const [searchLoading, setSearchLoading] = useState(false)
-  const [searchError, setSearchError] = useState<string | null>(null)
-  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null)
-
-  const fetchSetupStatus = async () => {
-    setLoading(true)
-    try {
-      const response = await fetch("/api/setup-check")
-      const data: SetupStatus = await response.json()
-      setStatus(data)
-      setSelectedChannelId(data.youtube.channelId) // Pre-fill if already configured
-    } catch (error) {
-      console.error("Failed to fetch setup status:", error)
-      setStatus(null)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle")
+  const [currentConfig, setCurrentConfig] = useState<{ apiKey: boolean; channelId: boolean }>({
+    apiKey: false,
+    channelId: false,
+  })
+  const { toast } = useToast()
 
   useEffect(() => {
-    fetchSetupStatus()
+    checkCurrentConfig()
   }, [])
 
+  const checkCurrentConfig = async () => {
+    const res = await fetch("/api/setup-check")
+    const data = await res.json()
+    setCurrentConfig({
+      apiKey: data.youtube.apiKey,
+      channelId: data.youtube.channelId,
+    })
+  }
+
   const handleSearch = async () => {
-    if (!searchQuery) return
+    if (!searchQuery) {
+      toast({
+        title: "Search Error",
+        description: "Please enter a channel name or ID to search.",
+        type: "error",
+      })
+      return
+    }
     setSearchLoading(true)
-    setSearchError(null)
     try {
-      const response = await fetch(`/api/youtube/search-channel?query=${encodeURIComponent(searchQuery)}`)
-      const data = await response.json()
+      const res = await fetch(`/api/youtube/search-channel?query=${encodeURIComponent(searchQuery)}`)
+      const data = await res.json()
       if (data.success) {
         setSearchResults(data.channels)
       } else {
-        setSearchError(data.error || "Failed to search channels.")
+        toast({
+          title: "Search Failed",
+          description: data.error || "Could not search for channels. Check your API Key.",
+          type: "error",
+        })
+        setSearchResults([])
       }
     } catch (error) {
-      setSearchError("An error occurred during search.")
       console.error("Search error:", error)
+      toast({
+        title: "Search Error",
+        description: "An unexpected error occurred during search.",
+        type: "error",
+      })
     } finally {
       setSearchLoading(false)
     }
   }
 
-  const handleSaveChannelId = async () => {
-    if (!selectedChannelId) return
-    // In a real application, you would save this to your database or a persistent store.
-    // For this demo, we'll just update the local state and simulate success.
-    alert(
-      `YouTube Channel ID saved: ${selectedChannelId}. Please update your Vercel environment variable YOUTUBE_CHANNEL_ID.`,
-    )
-    await fetchSetupStatus() // Re-fetch status to reflect potential changes
-  }
+  const handleTestConnection = async () => {
+    setLoading(true)
+    try {
+      // Temporarily set environment variables for the test if provided
+      const testParams = new URLSearchParams()
+      if (apiKey) testParams.append("YOUTUBE_API_KEY", apiKey)
+      if (channelId) testParams.append("YOUTUBE_CHANNEL_ID", channelId)
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
-        <p className="text-white ml-4">Loading setup status...</p>
-      </div>
-    )
+      const res = await fetch(`/api/youtube?${testParams.toString()}`)
+      const data = await res.json()
+
+      if (data.success) {
+        setStatus("success")
+        toast({
+          title: "Connection Successful!",
+          description: `Connected to YouTube channel: ${data.channel.name}`,
+          type: "success",
+        })
+      } else {
+        setStatus("error")
+        toast({
+          title: "Connection Failed",
+          description: data.error || "Please check your API Key and Channel ID.",
+          type: "error",
+        })
+      }
+    } catch (error) {
+      console.error("Test connection error:", error)
+      setStatus("error")
+      toast({
+        title: "Connection Error",
+        description: "An unexpected error occurred during connection test.",
+        type: "error",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white p-4 flex flex-col items-center justify-center">
-      <Card className="w-full max-w-2xl bg-gray-800/50 border-gray-700">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-white flex items-center gap-2">
-            <Youtube className="w-6 h-6 text-red-500" /> YouTube Setup
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="youtube-api-key-status" className="text-lg">
-              YouTube API Key (YOUTUBE_API_KEY)
-            </Label>
-            {status?.youtube.apiKeyConfigured ? (
-              <span className="flex items-center text-green-400">
-                <CheckCircle className="w-5 h-5 mr-2" /> Configured
-              </span>
-            ) : (
-              <span className="flex items-center text-red-400">
-                <XCircle className="w-5 h-5 mr-2" /> Not Configured
-              </span>
-            )}
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-8 text-white">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <Youtube className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h1 className="text-4xl font-bold mb-2">YouTube Integration Setup</h1>
+          <p className="text-gray-300">Configure your YouTube API Key and Channel ID to fetch live data.</p>
+        </div>
 
-          <div className="space-y-4">
-            <Label htmlFor="youtube-channel-id" className="text-lg">
-              YouTube Channel ID (YOUTUBE_CHANNEL_ID)
-            </Label>
-            <div className="flex gap-2">
-              <Input
-                id="youtube-channel-id"
-                placeholder="Enter YouTube Channel ID or search below"
-                value={selectedChannelId || ""}
-                onChange={(e) => setSelectedChannelId(e.target.value)}
-                className="bg-gray-700 border-gray-600 text-white"
-              />
-              <Button
-                onClick={handleSaveChannelId}
-                disabled={!selectedChannelId}
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                Save ID
-              </Button>
-            </div>
-            {status?.youtube.channelIdConfigured ? (
-              <p className="flex items-center text-green-400 text-sm">
-                <CheckCircle className="w-4 h-4 mr-1" /> Channel ID is configured.
+        <Card className="bg-gray-800 border-gray-700 mb-8">
+          <CardHeader>
+            <CardTitle className="text-white">1. Enter YouTube API Key</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-gray-400 text-sm">
+                You can get your API Key from the Google Cloud Console. Make sure the YouTube Data API v3 is enabled.
               </p>
-            ) : (
-              <p className="flex items-center text-red-400 text-sm">
-                <XCircle className="w-4 h-4 mr-1" /> Channel ID is not configured. Please set it in Vercel.
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            <Label htmlFor="channel-search" className="text-lg">
-              Search YouTube Channel
-            </Label>
-            <div className="flex gap-2">
-              <Input
-                id="channel-search"
-                placeholder="Search by channel name or keyword"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-gray-700 border-gray-600 text-white"
-                disabled={!status?.youtube.apiKeyConfigured}
-              />
-              <Button
-                onClick={handleSearch}
-                disabled={searchLoading || !status?.youtube.apiKeyConfigured}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {searchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                <span className="ml-2">Search</span>
-              </Button>
-            </div>
-            {!status?.youtube.apiKeyConfigured && (
-              <p className="text-red-400 text-sm">Please configure `YOUTUBE_API_KEY` to enable channel search.</p>
-            )}
-            {searchError && <p className="text-red-400 text-sm">{searchError}</p>}
-            {searchResults.length > 0 && (
-              <div className="mt-4 space-y-2 max-h-60 overflow-y-auto pr-2">
-                {searchResults.map((channel) => (
-                  <Card
-                    key={channel.id}
-                    className="bg-gray-700 border-gray-600 flex items-center p-3 cursor-pointer hover:bg-gray-600 transition-colors"
-                    onClick={() => setSelectedChannelId(channel.id)}
-                  >
-                    <img
-                      src={channel.thumbnail || "/placeholder.svg"}
-                      alt={channel.title}
-                      className="w-12 h-12 rounded-full mr-4"
-                    />
-                    <div>
-                      <p className="font-semibold text-white">{channel.title}</p>
-                      <p className="text-sm text-gray-400 line-clamp-1">{channel.description}</p>
-                    </div>
-                  </Card>
-                ))}
+              <div className="flex items-center gap-2">
+                <Label htmlFor="apiKey" className="sr-only">
+                  YouTube API Key
+                </Label>
+                <Input
+                  id="apiKey"
+                  type="password"
+                  placeholder="Your YouTube API Key"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
+                />
+                {currentConfig.apiKey ? (
+                  <CheckCircle className="w-6 h-6 text-green-500" />
+                ) : (
+                  <XCircle className="w-6 h-6 text-red-500" />
+                )}
               </div>
-            )}
-          </div>
+              <p className="text-xs text-gray-500">
+                Note: For production, set this as `YOUTUBE_API_KEY` environment variable in Vercel.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
-          <div className="flex justify-between items-center pt-4 border-t border-gray-700">
-            <Link href="/dashboard">
-              <Button variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700 bg-transparent">
-                Back to Dashboard
+        <Card className="bg-gray-800 border-gray-700 mb-8">
+          <CardHeader>
+            <CardTitle className="text-white">2. Find Your YouTube Channel ID</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-gray-400 text-sm">
+                You can find your Channel ID in your YouTube Advanced Settings or by searching below.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="Search channel by name or ID"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
+                />
+                <Button
+                  onClick={handleSearch}
+                  disabled={searchLoading || !apiKey}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {searchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                  <span className="sr-only">Search</span>
+                </Button>
+              </div>
+
+              {searchResults.length > 0 && (
+                <div className="mt-4 space-y-3 max-h-60 overflow-y-auto pr-2">
+                  {searchResults.map((channel) => (
+                    <div
+                      key={channel.id}
+                      className="flex items-center gap-3 p-3 bg-gray-700 rounded-md cursor-pointer hover:bg-gray-600 transition-colors"
+                      onClick={() => {
+                        setChannelId(channel.id)
+                        setSearchQuery(channel.name) // Set search query to channel name for better UX
+                        setSearchResults([]) // Clear search results after selection
+                      }}
+                    >
+                      {channel.image && (
+                        <Image
+                          src={channel.image || "/placeholder.svg"}
+                          alt={channel.name}
+                          width={40}
+                          height={40}
+                          className="rounded-full"
+                        />
+                      )}
+                      <div>
+                        <p className="font-semibold text-white">{channel.name}</p>
+                        <p className="text-xs text-gray-400 line-clamp-1">{channel.description}</p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="ml-auto text-red-400 border-red-400 hover:bg-red-900/20 bg-transparent"
+                      >
+                        Select
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 mt-4">
+                <Label htmlFor="channelId" className="sr-only">
+                  YouTube Channel ID
+                </Label>
+                <Input
+                  id="channelId"
+                  placeholder="Your YouTube Channel ID"
+                  value={channelId}
+                  onChange={(e) => setChannelId(e.target.value)}
+                  className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
+                />
+                {currentConfig.channelId ? (
+                  <CheckCircle className="w-6 h-6 text-green-500" />
+                ) : (
+                  <XCircle className="w-6 h-6 text-red-500" />
+                )}
+              </div>
+              <p className="text-xs text-gray-500">
+                Note: For production, set this as `YOUTUBE_CHANNEL_ID` environment variable in Vercel.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-center gap-4 mb-8">
+          <Button
+            onClick={handleTestConnection}
+            disabled={loading || !apiKey || !channelId}
+            className="bg-purple-600 hover:bg-purple-700 text-white text-lg px-8 py-3"
+          >
+            {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+            Test Connection
+          </Button>
+        </div>
+
+        {status === "success" && (
+          <Card className="bg-green-900/20 border-green-500/30 mb-8">
+            <CardContent className="p-6 text-center">
+              <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-green-300 mb-2">YouTube Connected Successfully!</h3>
+              <p className="text-green-200 mb-4">Your YouTube data should now appear on the dashboard.</p>
+              <Button asChild className="bg-green-600 hover:bg-green-700">
+                <Link href="/dashboard">Go to Dashboard</Link>
               </Button>
-            </Link>
-            {status?.youtube.allConfigured ? (
-              <span className="flex items-center text-green-400 font-semibold">
-                <CheckCircle className="w-5 h-5 mr-2" /> YouTube is fully configured!
-              </span>
-            ) : (
-              <span className="flex items-center text-red-400 font-semibold">
-                <XCircle className="w-5 h-5 mr-2" /> YouTube setup incomplete.
-              </span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        )}
+
+        {status === "error" && (
+          <Card className="bg-red-900/20 border-red-500/30 mb-8">
+            <CardContent className="p-6 text-center">
+              <XCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-red-300 mb-2">Connection Failed</h3>
+              <p className="text-red-200 mb-4">Please review your API Key and Channel ID and try again.</p>
+              <Button onClick={handleTestConnection} className="bg-red-600 hover:bg-red-700">
+                Retry Connection
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="text-center mt-8">
+          <Link href="/dashboard" className="text-gray-400 hover:underline text-sm">
+            Back to Dashboard
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }

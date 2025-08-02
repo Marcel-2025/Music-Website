@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "Ehhm.s Music Release Dashboard",
-  description: "Track and showcase your music releases across Spotify, YouTube, and more.",
+  description: "A dashboard to track music releases and artist stats across platforms.",
     generator: 'v0.dev'
 }
 
@@ -18,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           {children}
