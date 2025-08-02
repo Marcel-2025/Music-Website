@@ -33,8 +33,11 @@ async function getSpotifyAccessToken() {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const testMode = searchParams.get("test") === "true"
+  const testArtistId = searchParams.get("artistId")
 
-  if (!SPOTIFY_ARTIST_ID && !testMode) {
+  const currentArtistId = testArtistId || SPOTIFY_ARTIST_ID
+
+  if (!currentArtistId && !testMode) {
     return NextResponse.json({
       success: false,
       error: "Spotify Artist ID is not configured.",
@@ -50,19 +53,19 @@ export async function GET(request: Request) {
     }
 
     let artistData = null
-    if (SPOTIFY_ARTIST_ID) {
-      const artistRes = await fetch(`https://api.spotify.com/v1/artists/${SPOTIFY_ARTIST_ID}`, { headers })
+    if (currentArtistId) {
+      const artistRes = await fetch(`https://api.spotify.com/v1/artists/${currentArtistId}`, { headers })
       if (artistRes.ok) {
         artistData = await artistRes.json()
       } else {
-        console.warn(`Could not fetch Spotify artist data for ID ${SPOTIFY_ARTIST_ID}: ${artistRes.statusText}`)
+        console.warn(`Could not fetch Spotify artist data for ID ${currentArtistId}: ${artistRes.statusText}`)
       }
     }
 
     let releases = []
-    if (SPOTIFY_ARTIST_ID) {
+    if (currentArtistId) {
       const albumsRes = await fetch(
-        `https://api.spotify.com/v1/artists/${SPOTIFY_ARTIST_ID}/albums?include_groups=album,single,compilation&limit=20`,
+        `https://api.spotify.com/v1/artists/${currentArtistId}/albums?include_groups=album,single,compilation&limit=20`,
         { headers },
       )
 
@@ -79,7 +82,7 @@ export async function GET(request: Request) {
           streams: "N/A", // Spotify API doesn't provide public stream counts directly for albums/singles
         }))
       } else {
-        console.warn(`Could not fetch Spotify albums for artist ID ${SPOTIFY_ARTIST_ID}: ${albumsRes.statusText}`)
+        console.warn(`Could not fetch Spotify albums for artist ID ${currentArtistId}: ${albumsRes.statusText}`)
       }
     }
 

@@ -118,10 +118,6 @@
     @apply border-border outline-ring/50;
   }
   body {
-    margin: 0;
-    font-family: sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
     @apply bg-background text-foreground;
   }
 }

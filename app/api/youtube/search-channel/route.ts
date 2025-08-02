@@ -1,43 +1,44 @@
 import { NextResponse } from "next/server"
 
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const query = searchParams.get("query")
 
-  if (!query) {
-    return NextResponse.json({ error: "Query parameter is required" }, { status: 400 })
+  if (!process.env.YOUTUBE_API_KEY) {
+    return NextResponse.json({ error: "YouTube API Key not configured." }, { status: 500 })
   }
 
-  if (!YOUTUBE_API_KEY) {
-    return NextResponse.json({ error: "YouTube API Key is not configured." }, { status: 500 })
+  if (!query) {
+    return NextResponse.json({ error: "Search query is required." }, { status: 400 })
   }
 
   try {
-    const searchRes = await fetch(
+    const response = await fetch(
       `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(
         query,
-      )}&type=channel&maxResults=10&key=${YOUTUBE_API_KEY}`,
+      )}&type=channel&key=${process.env.YOUTUBE_API_KEY}`,
     )
+    const data = await response.json()
 
-    if (!searchRes.ok) {
-      const errorData = await searchRes.json()
-      console.error("YouTube search error:", errorData)
-      return NextResponse.json({ error: errorData.error?.message || "Failed to search YouTube" }, { status: 500 })
+    if (!response.ok || data.error) {
+      console.error("YouTube Search API Error:", data.error)
+      return NextResponse.json(
+        { error: "Failed to search channels", details: data.error?.message || "Unknown error" },
+        { status: response.status },
+      )
     }
 
-    const data = await searchRes.json()
     const channels = data.items.map((item: any) => ({
       id: item.snippet.channelId,
       name: item.snippet.channelTitle,
       description: item.snippet.description,
       image: item.snippet.thumbnails.high.url,
+      youtubeUrl: `https://www.youtube.com/channel/${item.snippet.channelId}`,
     }))
 
     return NextResponse.json({ channels })
   } catch (error: any) {
-    console.error("YouTube Search API Error:", error.message)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error("YouTube search API call failed:", error)
+    return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 })
   }
 }

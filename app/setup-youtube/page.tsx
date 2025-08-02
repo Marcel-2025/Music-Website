@@ -17,10 +17,11 @@ interface Channel {
 }
 
 export default function SetupYoutubePage() {
-  // Removed direct access to process.env.NEXT_PUBLIC_YOUTUBE_API_KEY
-  const [apiKeyInput, setApiKeyInput] = useState("") // For user to input a key to test
+  // These states are for user input/display, not directly tied to process.env
+  const [apiKeyInput, setApiKeyInput] = useState("") // This input is just for display/guidance, not used directly for API calls
   const [channelIdInput, setChannelIdInput] = useState("") // For user to select/input channel ID
 
+  // These states reflect the configuration status fetched from the server
   const [isApiKeyConfigured, setIsApiKeyConfigured] = useState(false)
   const [isChannelIdConfigured, setIsChannelIdConfigured] = useState(false)
 
@@ -38,20 +39,14 @@ export default function SetupYoutubePage() {
         const response = await fetch("/api/setup-check")
         const data = await response.json()
         if (data.youtube) {
-          setIsApiKeyConfigured(data.youtube.apiKey)
-          setIsChannelIdConfigured(data.youtube.channelId)
-          // If channel ID is configured, try to fetch its data
-          if (data.youtube.channelId) {
-            // We need the actual channel ID from the server to fetch its data
-            // This requires a new endpoint or modifying the existing /api/youtube to return the configured ID
-            // For now, we'll assume the user will manually enter or select it if not already set.
-            // Or, the /api/youtube route itself can return the configured channel ID if it exists.
-            // Let's modify /api/youtube to return the configured channel ID if it's set.
-            // No, the /api/youtube route already uses the env var.
-            // The issue is that the client-side `channelIdInput` needs to reflect the *configured* one.
-            // I need to fetch the configured channel ID from the server if it exists.
-            // Let's add a new endpoint for this, or modify setup-check to return the actual IDs if configured.
-            // Modifying setup-check to return actual IDs is better for the setup page.
+          setIsApiKeyConfigured(data.youtube.apiKeyConfigured)
+          setIsChannelIdConfigured(data.youtube.channelIdConfigured)
+          if (data.youtube.channelIdValue) {
+            setChannelIdInput(data.youtube.channelIdValue) // Pre-fill if already configured
+            // Also test connection if channel ID is pre-filled and API key is configured
+            if (data.youtube.apiKeyConfigured) {
+              testYoutubeConnection(data.youtube.channelIdValue)
+            }
           }
         }
       } catch (error) {
@@ -61,13 +56,6 @@ export default function SetupYoutubePage() {
     fetchConfigStatus()
   }, [])
 
-  // Re-fetch channel data if channelIdInput changes and isConfigured
-  useEffect(() => {
-    if (isChannelIdConfigured && channelIdInput) {
-      testYoutubeConnection(channelIdInput)
-    }
-  }, [isChannelIdConfigured, channelIdInput])
-
   const testYoutubeConnection = async (idToTest: string) => {
     setTestLoading(true)
     setTestResult(null)
@@ -76,7 +64,7 @@ export default function SetupYoutubePage() {
       // This API call uses the server-side YOUTUBE_API_KEY and YOUTUBE_CHANNEL_ID
       const response = await fetch(`/api/youtube?test=true&channelId=${idToTest}`)
       const data = await response.json()
-      if (data.success) {
+      if (response.ok && data.success) {
         setTestResult("success")
         setChannelData(data.channel)
       } else {
@@ -97,7 +85,7 @@ export default function SetupYoutubePage() {
       // This API call uses the server-side YOUTUBE_API_KEY
       const response = await fetch(`/api/youtube/search-channel?query=${encodeURIComponent(searchQuery)}`)
       const data = await response.json()
-      if (data.channels) {
+      if (response.ok && data.channels) {
         setSearchResults(data.channels)
       } else {
         console.error("YouTube search failed:", data.error)

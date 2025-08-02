@@ -18,23 +18,74 @@ interface Artist {
   genres: string[]
 }
 
+interface SetupStatus {
+  allConfigured: {
+    spotify: boolean
+    youtube: boolean
+    appleMusic: boolean
+  }
+  credentials: {
+    spotify: {
+      clientId: boolean
+      clientIdValue: string
+      clientSecret: boolean
+      artistId: boolean
+      artistIdValue: string
+    }
+    youtube: {
+      apiKey: boolean
+      channelId: boolean
+      channelIdValue: string
+    }
+    appleMusic: {
+      privateKey: boolean
+      keyId: boolean
+      teamId: boolean
+      artistId: boolean
+      artistIdValue: string
+    }
+  }
+  nextSteps: {
+    spotify: string
+    youtube: string
+    appleMusic: string
+  }
+}
+
 export default function SetupPage() {
-  const [clientId, setClientId] = useState(process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || "")
-  const [clientSecret, setClientSecret] = useState(process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_SECRET || "")
-  const [artistId, setArtistId] = useState(process.env.NEXT_PUBLIC_SPOTIFY_ARTIST_ID || "")
+  const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null)
   const [testResult, setTestResult] = useState<string | null>(null)
   const [testLoading, setTestLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<Artist[]>([])
   const [searchLoading, setSearchLoading] = useState(false)
   const [artistData, setArtistData] = useState<any>(null)
+  const [selectedArtistId, setSelectedArtistId] = useState("")
 
   useEffect(() => {
-    // Attempt to fetch artist data if artistId is already set
-    if (artistId) {
-      testSpotifyConnection(artistId)
-    }
+    checkSetupStatus()
   }, [])
+
+  useEffect(() => {
+    if (
+      setupStatus?.credentials.spotify.artistIdValue &&
+      setupStatus.credentials.spotify.artistIdValue !== "Not Configured"
+    ) {
+      setSelectedArtistId(setupStatus.credentials.spotify.artistIdValue)
+      testSpotifyConnection(setupStatus.credentials.spotify.artistIdValue)
+    }
+  }, [setupStatus])
+
+  const checkSetupStatus = async () => {
+    try {
+      const response = await fetch("/api/setup-check")
+      const data: SetupStatus = await response.json()
+      setSetupStatus(data)
+    } catch (error) {
+      console.error("Failed to check setup status:", error)
+      setSetupStatus(null) // Indicate an error in fetching status
+    }
+  }
 
   const testSpotifyConnection = async (idToTest: string) => {
     setTestLoading(true)
@@ -75,6 +126,18 @@ export default function SetupPage() {
     }
   }
 
+  if (!setupStatus) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-8 text-white text-center">
+        Loading setup status...
+      </div>
+    )
+  }
+
+  const spotifyClientIdConfigured = setupStatus.credentials.spotify.clientId
+  const spotifyClientSecretConfigured = setupStatus.credentials.spotify.clientSecret
+  const spotifyArtistIdConfigured = setupStatus.credentials.spotify.artistId
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-8">
       <div className="max-w-4xl mx-auto">
@@ -86,36 +149,36 @@ export default function SetupPage() {
 
         <Card className="bg-gray-800 border-gray-700 mb-8">
           <CardHeader>
-            <CardTitle className="text-white">1. Enter Spotify API Credentials</CardTitle>
+            <CardTitle className="text-white">1. Spotify API Credentials Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="client-id" className="text-gray-300 mb-2 block">
-                  Client ID
-                </Label>
-                <Input
-                  id="client-id"
-                  type="text"
-                  placeholder="a471757..."
-                  value={clientId}
-                  onChange={(e) => setClientId(e.target.value)}
-                  className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
-                />
-              </div>
-              <div>
-                <Label htmlFor="client-secret" className="text-gray-300 mb-2 block">
-                  Client Secret
-                </Label>
-                <Input
-                  id="client-secret"
-                  type="password"
-                  placeholder="38919f3..."
-                  value={clientSecret}
-                  onChange={(e) => setClientSecret(e.target.value)}
-                  className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
-                />
-              </div>
+            <div className="space-y-2">
+              <p className="text-gray-300">
+                {spotifyClientIdConfigured ? (
+                  <CheckCircle className="w-4 h-4 inline-block mr-2 text-green-500" />
+                ) : (
+                  <XCircle className="w-4 h-4 inline-block mr-2 text-red-500" />
+                )}
+                Client ID:{" "}
+                {spotifyClientIdConfigured ? setupStatus.credentials.spotify.clientIdValue : "Not Configured"}
+              </p>
+              <p className="text-gray-300">
+                {spotifyClientSecretConfigured ? (
+                  <CheckCircle className="w-4 h-4 inline-block mr-2 text-green-500" />
+                ) : (
+                  <XCircle className="w-4 h-4 inline-block mr-2 text-red-500" />
+                )}
+                Client Secret: {spotifyClientSecretConfigured ? "Configured" : "Not Configured"}
+              </p>
+              <p className="text-gray-300">
+                {spotifyArtistIdConfigured ? (
+                  <CheckCircle className="w-4 h-4 inline-block mr-2 text-green-500" />
+                ) : (
+                  <XCircle className="w-4 h-4 inline-block mr-2 text-red-500" />
+                )}
+                Artist ID:{" "}
+                {spotifyArtistIdConfigured ? setupStatus.credentials.spotify.artistIdValue : "Not Configured"}
+              </p>
             </div>
             <p className="text-sm text-gray-400 mt-4">
               Get your credentials from{" "}
@@ -153,7 +216,7 @@ export default function SetupPage() {
                   />
                   <Button
                     onClick={handleSearch}
-                    disabled={searchLoading || !clientId || !clientSecret}
+                    disabled={searchLoading || !spotifyClientIdConfigured || !spotifyClientSecretConfigured}
                     className="bg-green-600 hover:bg-green-700"
                   >
                     {searchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
@@ -169,7 +232,7 @@ export default function SetupPage() {
                     <Card
                       key={artist.id}
                       className="bg-gray-700 border-gray-600 hover:bg-gray-600 cursor-pointer transition-colors"
-                      onClick={() => setArtistId(artist.id)}
+                      onClick={() => setSelectedArtistId(artist.id)}
                     >
                       <CardContent className="p-3 flex items-center gap-3">
                         <Image
@@ -183,7 +246,7 @@ export default function SetupPage() {
                           <p className="text-white font-semibold">{artist.name}</p>
                           <p className="text-gray-400 text-sm">{artist.followers.toLocaleString()} followers</p>
                         </div>
-                        {artist.id === artistId && <CheckCircle className="w-5 h-5 text-green-500 ml-auto" />}
+                        {artist.id === selectedArtistId && <CheckCircle className="w-5 h-5 text-green-500 ml-auto" />}
                       </CardContent>
                     </Card>
                   ))}
@@ -198,8 +261,8 @@ export default function SetupPage() {
                   id="spotify-artist-id"
                   type="text"
                   placeholder="2UsXLt..."
-                  value={artistId}
-                  onChange={(e) => setArtistId(e.target.value)}
+                  value={selectedArtistId}
+                  onChange={(e) => setSelectedArtistId(e.target.value)}
                   className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
                 />
                 <p className="text-sm text-gray-400 mt-2">
@@ -217,8 +280,10 @@ export default function SetupPage() {
           </CardHeader>
           <CardContent>
             <Button
-              onClick={() => testSpotifyConnection(artistId)}
-              disabled={testLoading || !clientId || !clientSecret || !artistId}
+              onClick={() => testSpotifyConnection(selectedArtistId)}
+              disabled={
+                testLoading || !spotifyClientIdConfigured || !spotifyClientSecretConfigured || !selectedArtistId
+              }
               className="bg-purple-600 hover:bg-purple-700"
             >
               {testLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
