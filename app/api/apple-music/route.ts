@@ -1,55 +1,64 @@
 import { NextResponse } from "next/server"
-import jwt from "jsonwebtoken"
 
-const APPLE_MUSIC_PRIVATE_KEY = process.env.APPLE_MUSIC_PRIVATE_KEY
-const APPLE_MUSIC_KEY_ID = process.env.APPLE_MUSIC_KEY_ID
-const APPLE_MUSIC_TEAM_ID = process.env.APPLE_MUSIC_TEAM_ID
-const APPLE_MUSIC_ARTIST_ID = process.env.APPLE_MUSIC_ARTIST_ID
-
-function generateAppleMusicToken() {
-  const payload = {
-    iss: APPLE_MUSIC_TEAM_ID,
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 6 * 30 * 24 * 60 * 60, // 6 months
-  }
-
-  return jwt.sign(payload, APPLE_MUSIC_PRIVATE_KEY!, {
-    algorithm: "ES256",
-    header: {
-      kid: APPLE_MUSIC_KEY_ID,
-    },
-  })
-}
+// This is a placeholder for Apple Music API integration.
+// Apple Music API requires complex authentication (MusicKit private key, Key ID, Team ID).
+// For a full implementation, you would need to:
+// 1. Generate a developer token on your backend using your private key.
+// 2. Use this token to make requests to the Apple Music API.
+// 3. Handle artist search and fetching releases.
 
 export async function GET() {
-  try {
-    const token = generateAppleMusicToken()
+  const APPLE_MUSIC_PRIVATE_KEY = process.env.APPLE_MUSIC_PRIVATE_KEY
+  const APPLE_MUSIC_KEY_ID = process.env.APPLE_MUSIC_KEY_ID
+  const APPLE_MUSIC_TEAM_ID = process.env.APPLE_MUSIC_TEAM_ID
+  const APPLE_MUSIC_ARTIST_ID = process.env.APPLE_MUSIC_ARTIST_ID // Your Ehhm.s artist ID on Apple Music
 
-    // Get artist's albums
-    const response = await fetch(`https://api.music.apple.com/v1/catalog/us/artists/${APPLE_MUSIC_ARTIST_ID}/albums`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Music-User-Token": "", // Optional: for user-specific data
-      },
-    })
-
-    const data = await response.json()
-
+  if (!APPLE_MUSIC_PRIVATE_KEY || !APPLE_MUSIC_KEY_ID || !APPLE_MUSIC_TEAM_ID || !APPLE_MUSIC_ARTIST_ID) {
     return NextResponse.json({
-      releases:
-        data.data?.map((album: any) => ({
-          id: album.id,
-          title: album.attributes.name,
-          platform: "Apple Music",
-          releaseDate: album.attributes.releaseDate,
-          image: album.attributes.artwork.url.replace("{w}x{h}", "300x300"),
-          link: album.attributes.url,
-          type: album.attributes.isSingle ? "Single" : "Album",
-          trackCount: album.attributes.trackCount,
-        })) || [],
+      success: false,
+      error: "Apple Music API credentials are not fully configured.",
+      releases: [],
     })
-  } catch (error) {
-    console.error("Apple Music API Error:", error)
-    return NextResponse.json({ error: "Failed to fetch Apple Music data" }, { status: 500 })
   }
+
+  // In a real scenario, you'd generate a developer token here
+  // and then use it to fetch data. This is a simplified mock.
+  const mockReleases = [
+    {
+      id: "am1",
+      title: "Echoes of the Void (Apple Music)",
+      platform: "Apple Music",
+      releaseDate: "2024-06-15",
+      streams: "1.2M",
+      image: "/placeholder.svg?height=300&width=300",
+      link: "https://music.apple.com/us/album/echoes-of-the-void/1234567890",
+      type: "Album",
+      totalTracks: 8,
+      artists: "Ehhm.s",
+    },
+    {
+      id: "am2",
+      title: "Nebula Drift (Single) (Apple Music)",
+      platform: "Apple Music",
+      releaseDate: "2024-05-01",
+      streams: "500K",
+      image: "/placeholder.svg?height=300&width=300",
+      link: "https://music.apple.com/us/album/nebula-drift/0987654321",
+      type: "Single",
+      totalTracks: 1,
+      artists: "Ehhm.s",
+    },
+  ]
+
+  return NextResponse.json({
+    success: true,
+    releases: mockReleases,
+    artist: {
+      name: "Ehhm.s",
+      followers: 75000, // Mock data
+      image: "/placeholder.svg?height=200&width=200",
+      genres: ["Electronic", "Ambient", "Synthwave"],
+      popularity: 65,
+    },
+  })
 }

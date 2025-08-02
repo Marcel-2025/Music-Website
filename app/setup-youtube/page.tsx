@@ -1,316 +1,290 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { CheckCircle, Search, ExternalLink, Youtube, Users, Eye, Video } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Loader2, Youtube, Search, CheckCircle, XCircle, ExternalLink } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
+
+interface Channel {
+  id: string
+  name: string
+  description: string
+  image: string
+}
 
 export default function SetupYoutubePage() {
-  const [searchQuery, setSearchQuery] = useState("Ehhm.s")
-  const [searchResults, setSearchResults] = useState(null)
-  const [selectedChannelId, setSelectedChannelId] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [testResult, setTestResult] = useState(null)
+  // Removed direct access to process.env.NEXT_PUBLIC_YOUTUBE_API_KEY
+  const [apiKeyInput, setApiKeyInput] = useState("") // For user to input a key to test
+  const [channelIdInput, setChannelIdInput] = useState("") // For user to select/input channel ID
 
-  const searchChannels = async () => {
-    setLoading(true)
+  const [isApiKeyConfigured, setIsApiKeyConfigured] = useState(false)
+  const [isChannelIdConfigured, setIsChannelIdConfigured] = useState(false)
+
+  const [testResult, setTestResult] = useState<string | null>(null)
+  const [testLoading, setTestLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<Channel[]>([])
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [channelData, setChannelData] = useState<any>(null)
+
+  // Fetch initial configuration status on mount
+  useEffect(() => {
+    const fetchConfigStatus = async () => {
+      try {
+        const response = await fetch("/api/setup-check")
+        const data = await response.json()
+        if (data.youtube) {
+          setIsApiKeyConfigured(data.youtube.apiKey)
+          setIsChannelIdConfigured(data.youtube.channelId)
+          // If channel ID is configured, try to fetch its data
+          if (data.youtube.channelId) {
+            // We need the actual channel ID from the server to fetch its data
+            // This requires a new endpoint or modifying the existing /api/youtube to return the configured ID
+            // For now, we'll assume the user will manually enter or select it if not already set.
+            // Or, the /api/youtube route itself can return the configured channel ID if it exists.
+            // Let's modify /api/youtube to return the configured channel ID if it's set.
+            // No, the /api/youtube route already uses the env var.
+            // The issue is that the client-side `channelIdInput` needs to reflect the *configured* one.
+            // I need to fetch the configured channel ID from the server if it exists.
+            // Let's add a new endpoint for this, or modify setup-check to return the actual IDs if configured.
+            // Modifying setup-check to return actual IDs is better for the setup page.
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch setup status:", error)
+      }
+    }
+    fetchConfigStatus()
+  }, [])
+
+  // Re-fetch channel data if channelIdInput changes and isConfigured
+  useEffect(() => {
+    if (isChannelIdConfigured && channelIdInput) {
+      testYoutubeConnection(channelIdInput)
+    }
+  }, [isChannelIdConfigured, channelIdInput])
+
+  const testYoutubeConnection = async (idToTest: string) => {
+    setTestLoading(true)
+    setTestResult(null)
+    setChannelData(null)
     try {
-      const response = await fetch(`/api/youtube/search-channel?q=${encodeURIComponent(searchQuery)}`)
+      // This API call uses the server-side YOUTUBE_API_KEY and YOUTUBE_CHANNEL_ID
+      const response = await fetch(`/api/youtube?test=true&channelId=${idToTest}`)
       const data = await response.json()
-
-      if (response.ok) {
-        setSearchResults(data)
+      if (data.success) {
+        setTestResult("success")
+        setChannelData(data.channel)
       } else {
-        setSearchResults({
-          error: data.error,
-          channels: [],
-        })
+        setTestResult("error")
       }
     } catch (error) {
-      setSearchResults({
-        error: error.message,
-        channels: [],
-      })
+      setTestResult("error")
+      console.error("YouTube test error:", error)
     } finally {
-      setLoading(false)
+      setTestLoading(false)
     }
   }
 
-  const testWithChannelId = async () => {
-    if (!selectedChannelId) {
-      alert("Please select a channel first")
-      return
-    }
-
-    setLoading(true)
+  const handleSearch = async () => {
+    setSearchLoading(true)
+    setSearchResults([])
     try {
-      const response = await fetch(`/api/youtube?channelId=${selectedChannelId}`)
+      // This API call uses the server-side YOUTUBE_API_KEY
+      const response = await fetch(`/api/youtube/search-channel?query=${encodeURIComponent(searchQuery)}`)
       const data = await response.json()
-
-      if (response.ok) {
-        setTestResult({
-          success: true,
-          data,
-          message: `✅ Found ${data.releases?.length || 0} videos from this channel!`,
-        })
+      if (data.channels) {
+        setSearchResults(data.channels)
       } else {
-        setTestResult({
-          success: false,
-          message: `❌ Error: ${data.error}`,
-          details: data.details,
-        })
+        console.error("YouTube search failed:", data.error)
       }
     } catch (error) {
-      setTestResult({
-        success: false,
-        message: `❌ Error: ${error.message}`,
-      })
+      console.error("YouTube search error:", error)
     } finally {
-      setLoading(false)
-    }
-  }
-
-  const testApiKey = async () => {
-    setLoading(true)
-    try {
-      const response = await fetch("/api/youtube/search-channel?q=test")
-      const data = await response.json()
-
-      if (response.ok) {
-        alert("✅ YouTube API key is working!")
-      } else {
-        alert(`❌ API key test failed: ${data.error}`)
-      }
-    } catch (error) {
-      alert(`❌ Connection failed: ${error.message}`)
-    } finally {
-      setLoading(false)
+      setSearchLoading(false)
     }
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center gap-3 mb-8">
-          <Youtube className="w-8 h-8 text-red-500" />
-          <h1 className="text-3xl font-bold text-white">YouTube Integration Setup</h1>
+        <div className="text-center mb-8">
+          <Youtube className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h1 className="text-4xl font-bold text-white mb-2">YouTube Integration Setup</h1>
+          <p className="text-gray-300">Configure your YouTube API Key and Channel ID.</p>
         </div>
 
-        {/* API Key Status */}
-        <Card className="mb-8 bg-gray-800 border-gray-700">
+        <Card className="bg-gray-800 border-gray-700 mb-8">
           <CardHeader>
-            <CardTitle className="text-white">Step 1: Verify API Key</CardTitle>
+            <CardTitle className="text-white">1. Verify YouTube API Key</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="bg-gray-900 p-4 rounded">
-                <p className="text-gray-300 text-sm mb-2">Your YouTube API Key:</p>
-                <p className="text-green-400 font-mono text-sm">✅ AIzaSyBB9...QPQw</p>
-                <p className="text-yellow-400 font-mono text-sm">⚠️ Channel ID: Not set yet</p>
+                <p className="text-gray-300 text-sm mb-2">Your YouTube API Key Status:</p>
+                {isApiKeyConfigured ? (
+                  <p className="text-green-400 font-mono text-sm flex items-center">
+                    <CheckCircle className="w-4 h-4 mr-2" /> Configured in Vercel Environment Variables
+                  </p>
+                ) : (
+                  <p className="text-yellow-400 font-mono text-sm flex items-center">
+                    <XCircle className="w-4 h-4 mr-2" /> Not configured. Please add `YOUTUBE_API_KEY` to Vercel.
+                  </p>
+                )}
               </div>
-
-              <Button onClick={testApiKey} disabled={loading} className="bg-red-600 hover:bg-red-700">
-                {loading ? "Testing..." : "Test YouTube API Key"}
-              </Button>
+              <p className="text-sm text-gray-400 mt-2">
+                Get your API Key from{" "}
+                <Link
+                  href="https://console.cloud.google.com/apis/credentials"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:underline"
+                >
+                  Google Cloud Console
+                  <ExternalLink className="inline-block w-3 h-3 ml-1" />
+                </Link>
+                . Enable YouTube Data API v3.
+              </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Channel Search */}
-        <Card className="mb-8 bg-gray-800 border-gray-700">
+        <Card className="bg-gray-800 border-gray-700 mb-8">
           <CardHeader>
-            <CardTitle className="text-white">Step 2: Find Your YouTube Channel</CardTitle>
+            <CardTitle className="text-white">2. Find Your YouTube Channel ID</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search for 'Ehhm.s' or your channel name..."
-                  className="bg-gray-700 border-gray-600 text-white"
-                  onKeyPress={(e) => e.key === "Enter" && searchChannels()}
-                />
-                <Button onClick={searchChannels} disabled={loading}>
-                  <Search className="w-4 h-4 mr-2" />
-                  {loading ? "Searching..." : "Search"}
-                </Button>
+              <div>
+                <Label htmlFor="channel-search" className="text-gray-300 mb-2 block">
+                  Search for your channel by name
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="channel-search"
+                    type="text"
+                    placeholder="Ehhm.s"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="flex-grow bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
+                  />
+                  <Button
+                    onClick={handleSearch}
+                    disabled={searchLoading || !isApiKeyConfigured} // Disable if API key not configured
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    {searchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                    <span className="ml-2 hidden sm:inline">Search</span>
+                  </Button>
+                </div>
               </div>
 
-              {searchResults && (
-                <div className="space-y-3">
-                  {searchResults.error ? (
-                    <div className="bg-red-900/50 border border-red-500 p-4 rounded">
-                      <p className="text-red-400">Error: {searchResults.error}</p>
-                    </div>
-                  ) : (
-                    <>
-                      <h4 className="text-white font-medium">Found {searchResults.channels?.length || 0} channels:</h4>
-                      {searchResults.channels?.map((channel) => (
-                        <div
-                          key={channel.id}
-                          className={`bg-gray-700 p-4 rounded border-2 cursor-pointer transition-colors ${
-                            selectedChannelId === channel.id
-                              ? "border-red-500"
-                              : "border-transparent hover:border-gray-500"
-                          }`}
-                          onClick={() => setSelectedChannelId(channel.id)}
-                        >
-                          <div className="flex items-center gap-4">
-                            {channel.thumbnail && (
-                              <Image
-                                src={channel.thumbnail || "/placeholder.svg"}
-                                alt={channel.title}
-                                width={80}
-                                height={80}
-                                className="rounded-full"
-                              />
-                            )}
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h5 className="text-white font-medium">{channel.title}</h5>
-                                {selectedChannelId === channel.id && <CheckCircle className="w-5 h-5 text-green-500" />}
-                              </div>
-                              <p className="text-gray-400 text-sm mb-2 line-clamp-2">{channel.description}</p>
-                              <div className="flex items-center gap-4 text-sm text-gray-400 mb-2">
-                                <div className="flex items-center gap-1">
-                                  <Users className="w-4 h-4" />
-                                  {channel.subscriberCount.toLocaleString()} subscribers
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Video className="w-4 h-4" />
-                                  {channel.videoCount.toLocaleString()} videos
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Eye className="w-4 h-4" />
-                                  {channel.viewCount.toLocaleString()} views
-                                </div>
-                              </div>
-                              <p className="text-red-400 text-sm font-mono">ID: {channel.id}</p>
-                            </div>
-                            <div className="flex flex-col gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  navigator.clipboard.writeText(channel.id)
-                                  alert("Channel ID copied to clipboard!")
-                                }}
-                              >
-                                Copy ID
-                              </Button>
-                              <Button size="sm" variant="outline" asChild>
-                                <a href={channel.youtubeUrl} target="_blank" rel="noopener noreferrer">
-                                  <ExternalLink className="w-4 h-4" />
-                                </a>
-                              </Button>
-                            </div>
-                          </div>
+              {searchResults.length > 0 && (
+                <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+                  <p className="text-gray-400 text-sm">Select your channel:</p>
+                  {searchResults.map((channel) => (
+                    <Card
+                      key={channel.id}
+                      className="bg-gray-700 border-gray-600 hover:bg-gray-600 cursor-pointer transition-colors"
+                      onClick={() => setChannelIdInput(channel.id)}
+                    >
+                      <CardContent className="p-3 flex items-center gap-3">
+                        <Image
+                          src={channel.image || "/placeholder.svg?height=48&width=48"}
+                          alt={channel.name}
+                          width={48}
+                          height={48}
+                          className="rounded-full"
+                        />
+                        <div>
+                          <p className="text-white font-semibold">{channel.name}</p>
+                          <p className="text-gray-400 text-sm line-clamp-1">{channel.description}</p>
                         </div>
-                      ))}
-                    </>
-                  )}
+                        {channel.id === channelIdInput && <CheckCircle className="w-5 h-5 text-green-500 ml-auto" />}
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               )}
+
+              <div className="mt-4">
+                <Label htmlFor="youtube-channel-id" className="text-gray-300 mb-2 block">
+                  Your YouTube Channel ID
+                </Label>
+                <Input
+                  id="youtube-channel-id"
+                  type="text"
+                  placeholder="UC..."
+                  value={channelIdInput}
+                  onChange={(e) => setChannelIdInput(e.target.value)}
+                  className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
+                />
+                <p className="text-sm text-gray-400 mt-2">
+                  You can also find your Channel ID by going to your YouTube channel, clicking on your profile picture,
+                  then &quot;Settings&quot; -&gt; &quot;Advanced settings&quot;.
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Test Selected Channel */}
-        {selectedChannelId && (
-          <Card className="mb-8 bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white">Step 3: Test Selected Channel</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="bg-gray-900 p-4 rounded">
-                  <p className="text-gray-300 text-sm mb-2">Selected Channel ID:</p>
-                  <p className="text-red-400 font-mono">{selectedChannelId}</p>
-                </div>
-
-                <Button onClick={testWithChannelId} disabled={loading} className="bg-red-600 hover:bg-red-700">
-                  {loading ? "Testing..." : "Test Fetch Videos"}
-                </Button>
-
-                {testResult && (
-                  <div
-                    className={`p-4 rounded ${testResult.success ? "bg-green-900/50 border border-green-500" : "bg-red-900/50 border border-red-500"}`}
-                  >
-                    <p className="text-white font-medium">{testResult.message}</p>
-                    {testResult.details && <p className="text-gray-300 text-sm mt-1">{testResult.details}</p>}
-
-                    {testResult.success && testResult.data && (
-                      <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-gray-900 p-3 rounded text-center">
-                          <div className="text-xl font-bold text-white">{testResult.data.totalReleases}</div>
-                          <div className="text-gray-400 text-sm">Videos Found</div>
-                        </div>
-                        <div className="bg-gray-900 p-3 rounded text-center">
-                          <div className="text-xl font-bold text-red-400">
-                            {testResult.data.channel?.subscribers.toLocaleString()}
-                          </div>
-                          <div className="text-gray-400 text-sm">Subscribers</div>
-                        </div>
-                        <div className="bg-gray-900 p-3 rounded text-center">
-                          <div className="text-xl font-bold text-purple-400">
-                            {testResult.data.channel?.videoCount.toLocaleString()}
-                          </div>
-                          <div className="text-gray-400 text-sm">Total Videos</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="bg-blue-900/50 border border-blue-500 p-4 rounded">
-                  <p className="text-blue-400 font-medium">Next Step:</p>
-                  <p className="text-gray-300 text-sm mt-1">
-                    Once you confirm this is your channel, add this to your environment variables:
-                  </p>
-                  <p className="text-green-400 font-mono text-sm mt-2">YOUTUBE_CHANNEL_ID={selectedChannelId}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Instructions */}
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-gray-800 border-gray-700 mb-8">
           <CardHeader>
-            <CardTitle className="text-white">Final Steps</CardTitle>
+            <CardTitle className="text-white">3. Test Connection</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-white font-semibold mb-2">1. Add Your Channel ID</h4>
-                <p className="text-gray-300 text-sm mb-2">
-                  After finding your channel above, add it to your environment variables:
-                </p>
-                <div className="bg-gray-900 p-3 rounded text-sm text-gray-300 font-mono">
-                  YOUTUBE_CHANNEL_ID=your_selected_channel_id
+            <Button
+              onClick={() => testYoutubeConnection(channelIdInput)}
+              disabled={testLoading || !isApiKeyConfigured || !channelIdInput}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {testLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Test YouTube Connection
+            </Button>
+
+            {testResult === "success" && channelData && (
+              <div className="mt-4 text-green-400 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5" />
+                <span className="font-semibold">Connection Successful!</span>
+                <div className="ml-4 flex items-center gap-2 text-gray-300">
+                  <Image
+                    src={channelData.image || "/placeholder.svg?height=32&width=32"}
+                    alt={channelData.name}
+                    width={32}
+                    height={32}
+                    className="rounded-full"
+                  />
+                  <span>
+                    {channelData.name} ({channelData.subscribers.toLocaleString()} subscribers)
+                  </span>
+                  <Link href={channelData.youtubeUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="w-4 h-4 text-blue-400 hover:text-blue-300" />
+                  </Link>
                 </div>
               </div>
-
-              <div>
-                <h4 className="text-white font-semibold mb-2">2. Restart Your Development Server</h4>
-                <p className="text-gray-300 text-sm">
-                  After adding the environment variable, restart your dev server to load the new configuration.
-                </p>
+            )}
+            {testResult === "error" && (
+              <div className="mt-4 text-red-400 flex items-center gap-2">
+                <XCircle className="w-5 h-5" />
+                <span className="font-semibold">Connection Failed.</span>
+                <span className="text-sm text-gray-400 ml-2">Please check your API Key and Channel ID.</span>
               </div>
-
-              <div>
-                <h4 className="text-white font-semibold mb-2">3. See Combined Results</h4>
-                <p className="text-gray-300 text-sm">
-                  Your main app will now show both Spotify releases and YouTube videos together!
-                </p>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
+
+        <div className="text-center">
+          <p className="text-gray-400 text-sm">
+            Once configured, your YouTube videos will appear on your main music portfolio page.
+          </p>
+          <Button asChild className="mt-6 bg-purple-600 hover:bg-purple-700">
+            <Link href="/dashboard">Go to Dashboard</Link>
+          </Button>
+        </div>
       </div>
     </div>
   )

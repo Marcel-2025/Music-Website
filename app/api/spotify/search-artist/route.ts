@@ -4,58 +4,69 @@ const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET
 
 async function getSpotifyAccessToken() {
+  if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
+    throw new Error("Spotify API credentials are not set.")
+  }
+
+  const authString = Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString("base64")
+
   const response = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
     headers: {
+      Authorization: `Basic ${authString}`,
       "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: `Basic ${Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString("base64")}`,
     },
     body: "grant_type=client_credentials",
   })
+
+  if (!response.ok) {
+    const errorData = await response.json()
+    console.error("Spotify token error:", errorData)
+    throw new Error(`Failed to get Spotify access token: ${errorData.error_description || response.statusText}`)
+  }
 
   const data = await response.json()
   return data.access_token
 }
 
 export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const artistName = searchParams.get("q") || "Ehhm.s"
+  const { searchParams } = new URL(request.url)
+  const query = searchParams.get("query")
 
-    if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
-      return NextResponse.json({ error: "Spotify credentials not configured" }, { status: 400 })
+  if (!query) {
+    return NextResponse.json({ error: "Query parameter is required" }, { status: 400 })
+  }
+
+  try {
+    const accessToken = await getSpotifyAccessToken()
+    const headers = {
+      Authorization: `Bearer ${accessToken}`,
     }
 
-    const accessToken = await getSpotifyAccessToken()
-
-    const searchResponse = await fetch(
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=10`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
+    const searchRes = await fetch(
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&limit=10`,
+      { headers },
     )
 
-    const searchData = await searchResponse.json()
+    if (!searchRes.ok) {
+      const errorData = await searchRes.json()
+      console.error("Spotify search error:", errorData)
+      return NextResponse.json({ error: errorData.error?.message || "Failed to search Spotify" }, { status: 500 })
+    }
 
-    const artists = searchData.artists.items.map((artist: any) => ({
+    const data = await searchRes.json()
+    const artists = data.artists.items.map((artist: any) => ({
       id: artist.id,
       name: artist.name,
       followers: artist.followers.total,
-      genres: artist.genres,
       popularity: artist.popularity,
-      image: artist.images[0]?.url,
-      spotifyUrl: artist.external_urls.spotify,
+      image: artist.images[0]?.url || "/placeholder.svg?height=64&width=64",
+      genres: artist.genres,
     }))
 
-    return NextResponse.json({
-      query: artistName,
-      artists,
-      message: artists.length > 0 ? "Found artists matching your search" : "No artists found",
-    })
-  } catch (error) {
-    console.error("Spotify Search Error:", error)
-    return NextResponse.json({ error: "Failed to search artists" }, { status: 500 })
+    return NextResponse.json({ artists })
+  } catch (error: any) {
+    console.error("Spotify Search API Error:", error.message)
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

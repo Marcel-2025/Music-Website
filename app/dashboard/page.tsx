@@ -14,6 +14,7 @@ import {
   ExternalLink,
   Eye,
   TrendingUp,
+  Apple,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -29,16 +30,18 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     setLoading(true)
     try {
-      const [releasesRes, spotifyRes, youtubeRes] = await Promise.allSettled([
+      const [releasesRes, spotifyRes, youtubeRes, appleMusicRes] = await Promise.allSettled([
         fetch("/api/releases"),
         fetch("/api/spotify"),
         fetch("/api/youtube"),
+        fetch("/api/apple-music"), // Fetch Apple Music status
       ])
 
       const dashboardData = {
         releases: null,
         spotify: null,
         youtube: null,
+        appleMusic: null, // Add Apple Music to dashboard data
         errors: [],
       }
 
@@ -65,6 +68,14 @@ export default function DashboardPage() {
         dashboardData.errors.push(`YouTube: ${errorData.error}`)
       }
 
+      // Process Apple Music
+      if (appleMusicRes.status === "fulfilled" && appleMusicRes.value.ok) {
+        dashboardData.appleMusic = await appleMusicRes.value.json()
+      } else if (appleMusicRes.status === "fulfilled") {
+        const errorData = await appleMusicRes.value.json()
+        dashboardData.errors.push(`Apple Music: ${errorData.error}`)
+      }
+
       setData(dashboardData)
     } catch (error) {
       console.error("Dashboard fetch error:", error)
@@ -86,9 +97,11 @@ export default function DashboardPage() {
 
   const spotifyConnected = data?.spotify?.success
   const youtubeConnected = data?.youtube?.success
+  const appleMusicConnected = data?.appleMusic?.success
   const totalReleases = data?.releases?.totalReleases || 0
   const spotifyReleases = data?.releases?.releases?.filter((r) => r.platform === "Spotify").length || 0
   const youtubeReleases = data?.releases?.releases?.filter((r) => r.platform === "YouTube").length || 0
+  const appleMusicReleases = data?.releases?.releases?.filter((r) => r.platform === "Apple Music").length || 0
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-8">
@@ -114,6 +127,9 @@ export default function DashboardPage() {
                 </Badge>
                 <Badge variant="outline" className="text-red-400 border-red-400 text-xs">
                   {youtubeReleases} YouTube
+                </Badge>
+                <Badge variant="outline" className="text-gray-400 border-gray-400 text-xs">
+                  {appleMusicReleases} Apple Music
                 </Badge>
               </div>
             </CardContent>
@@ -149,7 +165,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Platform Status */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Spotify Status */}
           <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
@@ -264,6 +280,57 @@ export default function DashboardPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Apple Music Status */}
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Apple className="w-6 h-6 text-gray-500" />
+                Apple Music Integration
+                {appleMusicConnected ? (
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                ) : (
+                  <XCircle className="w-5 h-5 text-red-500" />
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {appleMusicConnected ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    {data.appleMusic.artist.image && (
+                      <Image
+                        src={data.appleMusic.artist.image || "/placeholder.svg"}
+                        alt={data.appleMusic.artist.name}
+                        width={60}
+                        height={60}
+                        className="rounded-full"
+                      />
+                    )}
+                    <div>
+                      <h4 className="text-white font-semibold">{data.appleMusic.artist.name}</h4>
+                      <p className="text-gray-400">{data.appleMusic.artist.followers.toLocaleString()} followers</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-400">Releases:</span>
+                      <span className="text-white ml-2">{data.appleMusic.totalReleases}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Popularity:</span>
+                      <span className="text-white ml-2">{data.appleMusic.artist.popularity}/100</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-red-400">
+                  <p>❌ Not fully configured</p>
+                  <p className="text-sm text-gray-400 mt-1">Requires Apple Developer Program and MusicKit setup.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Configuration Summary */}
@@ -343,6 +410,13 @@ export default function DashboardPage() {
             <Link href="/setup-youtube">
               <Youtube className="w-5 h-5 mr-2" />
               Test YouTube
+            </Link>
+          </Button>
+
+          <Button asChild variant="outline" size="lg">
+            <Link href="/test-apple-music">
+              <Apple className="w-5 h-5 mr-2" />
+              Test Apple Music
             </Link>
           </Button>
         </div>

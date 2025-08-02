@@ -6,22 +6,24 @@ const SPOTIFY_ARTIST_ID = process.env.SPOTIFY_ARTIST_ID
 
 async function getSpotifyAccessToken() {
   if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
-    throw new Error("Missing Spotify credentials")
+    throw new Error("Spotify API credentials are not set.")
   }
+
+  const authString = Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString("base64")
 
   const response = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
     headers: {
+      Authorization: `Basic ${authString}`,
       "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: `Basic ${Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString("base64")}`,
     },
     body: "grant_type=client_credentials",
-    cache: "no-store",
   })
 
   if (!response.ok) {
-    const error = await response.text()
-    throw new Error(`Spotify auth failed: ${error}`)
+    const errorData = await response.json()
+    console.error("Spotify token error:", errorData)
+    throw new Error(`Failed to get Spotify access token: ${errorData.error_description || response.statusText}`)
   }
 
   const data = await response.json()
@@ -29,97 +31,74 @@ async function getSpotifyAccessToken() {
 }
 
 export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const testArtistId = searchParams.get("artistId")
-    const artistId = testArtistId || SPOTIFY_ARTIST_ID
+  const { searchParams } = new URL(request.url)
+  const testMode = searchParams.get("test") === "true"
 
-    if (!artistId) {
-      return NextResponse.json(
-        {
-          error: "Spotify Artist ID not configured",
-          message: "Please add your SPOTIFY_ARTIST_ID to environment variables",
-        },
-        { status: 400 },
-      )
-    }
-
-    const accessToken = await getSpotifyAccessToken()
-
-    // Get artist's albums and singles
-    const albumsResponse = await fetch(
-      `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,single,compilation&market=US&limit=50&offset=0`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        cache: "no-store",
-      },
-    )
-
-    if (!albumsResponse.ok) {
-      const error = await albumsResponse.text()
-      throw new Error(`Failed to fetch albums: ${error}`)
-    }
-
-    const albumsData = await albumsResponse.json()
-
-    // Get artist info
-    const artistResponse = await fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      cache: "no-store",
+  if (!SPOTIFY_ARTIST_ID && !testMode) {
+    return NextResponse.json({
+      success: false,
+      error: "Spotify Artist ID is not configured.",
+      releases: [],
+      artist: null,
     })
+  }
 
-    if (!artistResponse.ok) {
-      const error = await artistResponse.text()
-      throw new Error(`Failed to fetch artist info: ${error}`)
+  try {
+    const accessToken = await getSpotifyAccessToken()
+    const headers = {
+      Authorization: `Bearer ${accessToken}`,
     }
 
-    const artistData = await artistResponse.json()
+    let artistData = null
+    if (SPOTIFY_ARTIST_ID) {
+      const artistRes = await fetch(`https://api.spotify.com/v1/artists/${SPOTIFY_ARTIST_ID}`, { headers })
+      if (artistRes.ok) {
+        artistData = await artistRes.json()
+      } else {
+        console.warn(`Could not fetch Spotify artist data for ID ${SPOTIFY_ARTIST_ID}: ${artistRes.statusText}`)
+      }
+    }
 
-    // Format the releases
-    const releases = albumsData.items.map((album: any) => ({
-      id: album.id,
-      title: album.name,
-      platform: "Spotify",
-      platformIcon: "Spotify",
-      releaseDate: album.release_date,
-      streams: `${album.total_tracks} tracks`,
-      image: album.images[0]?.url || "/placeholder.svg?height=300&width=300",
-      link: album.external_urls.spotify,
-      type: album.album_type === "single" ? "Single" : album.album_type === "album" ? "Album" : "EP",
-      totalTracks: album.total_tracks,
-      artists: album.artists.map((artist: any) => artist.name).join(", "),
-    }))
+    let releases = []
+    if (SPOTIFY_ARTIST_ID) {
+      const albumsRes = await fetch(
+        `https://api.spotify.com/v1/artists/${SPOTIFY_ARTIST_ID}/albums?include_groups=album,single,compilation&limit=20`,
+        { headers },
+      )
+
+      if (albumsRes.ok) {
+        const albumsData = await albumsRes.json()
+        releases = albumsData.items.map((item: any) => ({
+          id: item.id,
+          title: item.name,
+          platform: "Spotify",
+          releaseDate: item.release_date,
+          image: item.images[0]?.url || "/placeholder.svg?height=300&width=300",
+          link: item.external_urls.spotify,
+          type: item.album_type === "album" ? "Album" : "Single",
+          streams: "N/A", // Spotify API doesn't provide public stream counts directly for albums/singles
+        }))
+      } else {
+        console.warn(`Could not fetch Spotify albums for artist ID ${SPOTIFY_ARTIST_ID}: ${albumsRes.statusText}`)
+      }
+    }
 
     return NextResponse.json({
       success: true,
       releases,
-      artist: {
-        name: artistData.name,
-        followers: artistData.followers.total,
-        image: artistData.images[0]?.url,
-        genres: artistData.genres,
-        popularity: artistData.popularity,
-        externalUrls: artistData.external_urls,
-      },
+      artist: artistData
+        ? {
+            name: artistData.name,
+            followers: artistData.followers.total,
+            image: artistData.images[0]?.url || "/placeholder.svg?height=200&width=200",
+            genres: artistData.genres,
+            popularity: artistData.popularity,
+          }
+        : null,
       totalReleases: releases.length,
     })
-  } catch (error) {
-    console.error("Spotify API Error:", error)
-    return NextResponse.json(
-      {
-        error: "Failed to fetch Spotify data",
-        details: error instanceof Error ? error.message : "Unknown error",
-        configured: {
-          clientId: !!SPOTIFY_CLIENT_ID,
-          clientSecret: !!SPOTIFY_CLIENT_SECRET,
-          artistId: !!SPOTIFY_ARTIST_ID,
-        },
-      },
-      { status: 500 },
-    )
+  } catch (error: any) {
+    console.error("Spotify API Error:", error.message)
+    return NextResponse.json({ success: false, error: error.message, releases: [], artist: null }, { status: 500 })
   }
 }

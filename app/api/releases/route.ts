@@ -5,9 +5,10 @@ export async function GET() {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
 
     // Fetch from all platforms in parallel
-    const [spotifyRes, youtubeRes] = await Promise.allSettled([
+    const [spotifyRes, youtubeRes, appleMusicRes] = await Promise.allSettled([
       fetch(`${baseUrl}/api/spotify`),
       fetch(`${baseUrl}/api/youtube`),
+      fetch(`${baseUrl}/api/apple-music`), // Include Apple Music
     ])
 
     const allReleases = []
@@ -47,6 +48,25 @@ export async function GET() {
     } else {
       platformStats.youtube = {
         name: "YouTube",
+        connected: false,
+        error: "Not configured or connection failed",
+      }
+    }
+
+    // Process Apple Music data
+    if (appleMusicRes.status === "fulfilled" && appleMusicRes.value.ok) {
+      const appleMusicData = await appleMusicRes.value.json()
+      if (appleMusicData.success) {
+        allReleases.push(...appleMusicData.releases)
+        platformStats.appleMusic = {
+          followers: appleMusicData.artist?.followers || 0,
+          name: "Apple Music",
+          connected: true,
+        }
+      }
+    } else {
+      platformStats.appleMusic = {
+        name: "Apple Music",
         connected: false,
         error: "Not configured or connection failed",
       }
