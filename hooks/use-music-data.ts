@@ -51,13 +51,12 @@ interface ArtistData {
   image: string
   genres: string[]
   popularity: number
-  spotifyUrl?: string
 }
 
 interface MusicData {
   releases: Release[]
   platformStats: PlatformStats
-  artistData: ArtistData | null
+  artistData: ArtistData
   loading: boolean
   error: string | null
   refetch: () => void
@@ -65,46 +64,46 @@ interface MusicData {
 
 export function useMusicData(): MusicData {
   const [releases, setReleases] = useState<Release[]>([])
-  const [platformStats, setPlatformStats] = useState<PlatformStats>({})
-  const [artistData, setArtistData] = useState<ArtistData | null>(null)
+  const [platformStats, setPlatformStats] = useState<PlatformStats>({
+    spotify: { connected: false, followers: 0, name: "Spotify" },
+    youtube: { connected: false, subscribers: 0, videoCount: 0, name: "YouTube" },
+    appleMusic: { connected: false, followers: 0, name: "Apple Music" },
+    amazonMusic: { connected: false, followers: 0, name: "Amazon Music" },
+  })
+  const [artistData, setArtistData] = useState<ArtistData>({
+    name: "Ehhm.s",
+    followers: 0,
+    image: "/placeholder-user.jpg",
+    genres: [],
+    popularity: 0,
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchMusicData = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch("/api/releases")
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error || "An unknown error occurred while fetching music data.")
-        setReleases([])
-        setPlatformStats({})
-        setArtistData(null)
-        return
+      const res = await fetch("/api/releases") // Use relative path
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.message || "Failed to fetch music data")
       }
-
-      setReleases(data.releases || [])
-      setPlatformStats(data.platformStats || {})
-      setArtistData(data.artistData || null)
-      if (data.error) {
-        setError(data.error) // Set partial error if some data loaded but with issues
-      }
+      const data = await res.json()
+      setReleases(data.releases)
+      setPlatformStats(data.platformStats)
+      setArtistData(data.artistData)
     } catch (err: any) {
-      console.error("Failed to fetch music data:", err)
-      setError(`Failed to fetch music data: ${err.message}`)
-      setReleases([])
-      setPlatformStats({})
-      setArtistData(null)
+      console.error("Error in useMusicData:", err)
+      setError(err.message || "An unexpected error occurred.")
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    fetchMusicData()
-  }, [fetchMusicData])
+    fetchData()
+  }, [fetchData])
 
-  return { releases, platformStats, artistData, loading, error, refetch: fetchMusicData }
+  return { releases, platformStats, artistData, loading, error, refetch: fetchData }
 }
