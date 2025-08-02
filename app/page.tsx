@@ -139,7 +139,13 @@ export default function Home() {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Spotify Follower</CardTitle>
-                    <Image alt="Spotify" className="h-5 w-5" src="/placeholder.svg?height=20&width=20" />
+                    <Image
+                      alt="Spotify"
+                      className="h-5 w-5"
+                      src="/placeholder.png?height=20&width=20"
+                      width={20}
+                      height={20}
+                    />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
@@ -151,7 +157,7 @@ export default function Home() {
                       <p className="text-xs text-red-500">{platformStats.spotify.error}</p>
                     )}
                     {!platformStats.spotify?.connected && (
-                      <Link href="/setup" className="text-xs text-blue-500 hover:underline">
+                      <Link href="/test-spotify" className="text-xs text-blue-500 hover:underline">
                         Jetzt verbinden
                       </Link>
                     )}
@@ -160,7 +166,13 @@ export default function Home() {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">YouTube Abonnenten</CardTitle>
-                    <Image alt="YouTube" className="h-5 w-5" src="/placeholder.svg?height=20&width=20" />
+                    <Image
+                      alt="YouTube"
+                      className="h-5 w-5"
+                      src="/placeholder.png?height=20&width=20"
+                      width={20}
+                      height={20}
+                    />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
@@ -181,7 +193,13 @@ export default function Home() {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Apple Music Follower</CardTitle>
-                    <Image alt="Apple Music" className="h-5 w-5" src="/placeholder.svg?height=20&width=20" />
+                    <Image
+                      alt="Apple Music"
+                      className="h-5 w-5"
+                      src="/placeholder.png?height=20&width=20"
+                      width={20}
+                      height={20}
+                    />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
@@ -202,7 +220,13 @@ export default function Home() {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Amazon Music Follower</CardTitle>
-                    <Image alt="Amazon Music" className="h-5 w-5" src="/placeholder.svg?height=20&width=20" />
+                    <Image
+                      alt="Amazon Music"
+                      className="h-5 w-5"
+                      src="/placeholder.png?height=20&width=20"
+                      width={20}
+                      height={20}
+                    />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
@@ -263,7 +287,7 @@ export default function Home() {
                         alt={release.title}
                         className="h-48 w-full object-cover"
                         height="200"
-                        src={release.image || "/placeholder.svg?height=200&width=200&query=album cover"}
+                        src={release.image || "/placeholder.png?height=200&width=200&query=album cover"}
                         style={{
                           aspectRatio: "200/200",
                           objectFit: "cover",

@@ -2,13 +2,19 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export default function SetupLoading() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-black to-gray-900 p-4">
-      <div className="w-full max-w-md space-y-6 rounded-lg bg-gray-800 p-8 shadow-lg">
-        <Skeleton className="h-8 w-3/4 mx-auto" />
-        <Skeleton className="h-6 w-full" />
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4 dark:bg-gray-950">
+      <div className="w-full max-w-md space-y-6 rounded-lg bg-white p-8 shadow-lg dark:bg-gray-900">
+        <div className="text-center">
+          <Skeleton className="mx-auto h-12 w-12 rounded-full" />
+          <Skeleton className="mt-4 h-6 w-48 mx-auto" />
+          <Skeleton className="mt-2 h-4 w-64 mx-auto" />
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
         <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-4 w-1/2 mx-auto" />
       </div>
     </div>
   )

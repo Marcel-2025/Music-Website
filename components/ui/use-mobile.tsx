@@ -1,20 +1,21 @@
 "use client"
 
-import * as React from "react"
+import { useState, useEffect } from "react"
 
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
-  React.useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768) // Tailwind's 'md' breakpoint is 768px
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768) // Tailwind's 'md' breakpoint
     }
 
-    // Set initial value
-    handleResize()
+    checkIsMobile()
+    window.addEventListener("resize", checkIsMobile)
 
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
+    return () => {
+      window.removeEventListener("resize", checkIsMobile)
+    }
   }, [])
 
   return isMobile

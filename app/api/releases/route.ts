@@ -1,124 +1,123 @@
 import { NextResponse } from "next/server"
 
-export async function GET() {
-  const releases = []
-  const platformStats = {
-    spotify: { connected: false, followers: 0, name: "Spotify" },
-    youtube: { connected: false, subscribers: 0, videoCount: 0, name: "YouTube" },
-    appleMusic: { connected: false, followers: 0, name: "Apple Music" },
-    amazonMusic: { connected: false, followers: 0, name: "Amazon Music" },
+// Helper function to fetch data and handle errors
+async function fetchData(path: string) {
+  try {
+    // Use relative path directly for internal API calls.
+    // Next.js and Vercel will handle the base URL correctly in production.
+    const response = await fetch(path, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-store", // Ensure fresh data
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text() // Read as text to avoid JSON parsing error
+      console.error(`Error fetching from ${path}: ${response.status} ${response.statusText} - ${errorText}`)
+      return { success: false, data: null, error: `Failed to fetch from ${path}: ${response.statusText}` }
+    }
+
+    const data = await response.json()
+    return { success: true, data, error: null }
+  } catch (error: any) {
+    console.error(`Exception fetching from ${path}:`, error)
+    return { success: false, data: null, error: `Network error or invalid response from ${path}: ${error.message}` }
   }
-  const artistData = {
-    name: "Ehhm.s",
+}
+
+export async function GET() {
+  // Use relative paths for internal API calls
+  const spotifyPromise = fetchData("/api/spotify")
+  const youtubePromise = fetchData("/api/youtube")
+  const appleMusicPromise = fetchData("/api/apple-music")
+  const amazonMusicPromise = fetchData("/api/amazon-music")
+
+  const [spotifyRes, youtubeRes, appleMusicRes, amazonMusicRes] = await Promise.all([
+    spotifyPromise,
+    youtubePromise,
+    appleMusicPromise,
+    amazonMusicPromise,
+  ])
+
+  const allReleases: any[] = []
+  const platformStats: { [key: string]: any } = {}
+  let artistData: any = {
+    name: "Ehhm.s", // Default name
     followers: 0,
-    image: "/placeholder-user.jpg",
+    image: "/placeholder-user.png",
     genres: [],
     popularity: 0,
   }
-  const errors = []
+  const errors: string[] = []
 
-  // Fetch Spotify data
-  try {
-    const spotifyRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/spotify`)
-    if (!spotifyRes.ok) {
-      const errorText = await spotifyRes.text()
-      throw new Error(`Spotify API error: ${errorText}`)
+  // Process Spotify data
+  if (spotifyRes.success && spotifyRes.data) {
+    allReleases.push(...(spotifyRes.data.releases || []))
+    platformStats.spotify = spotifyRes.data.platformStats?.spotify || { connected: false }
+    if (spotifyRes.data.artistData) {
+      artistData = { ...artistData, ...spotifyRes.data.artistData }
     }
-    const spotifyData = await spotifyRes.json()
-    if (spotifyData.success) {
-      releases.push(...spotifyData.releases)
-      platformStats.spotify = { ...spotifyData.platformStats, connected: true }
-      artistData.followers += spotifyData.platformStats.followers
-      artistData.image = spotifyData.artistData.image || artistData.image
-      artistData.genres = [...new Set([...artistData.genres, ...spotifyData.artistData.genres])]
-      artistData.popularity = spotifyData.artistData.popularity
-    } else {
-      platformStats.spotify.error = spotifyData.message || "Unknown Spotify error"
-    }
-  } catch (error: any) {
-    console.error("Error fetching Spotify data:", error)
-    platformStats.spotify.error = error.message || "Failed to fetch Spotify data"
-    errors.push(`Spotify: ${error.message || "Failed to fetch"}`)
+  } else {
+    errors.push(spotifyRes.error || "Spotify data fetch failed.")
+    platformStats.spotify = { connected: false, error: spotifyRes.error }
   }
 
-  // Fetch YouTube data
-  try {
-    const youtubeRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/youtube`)
-    if (!youtubeRes.ok) {
-      const errorText = await youtubeRes.text()
-      throw new Error(`YouTube API error: ${errorText}`)
+  // Process YouTube data
+  if (youtubeRes.success && youtubeRes.data) {
+    allReleases.push(...(youtubeRes.data.releases || []))
+    platformStats.youtube = youtubeRes.data.platformStats?.youtube || { connected: false }
+    if (youtubeRes.data.artistData) {
+      artistData = { ...artistData, ...youtubeRes.data.artistData }
     }
-    const youtubeData = await youtubeRes.json()
-    if (youtubeData.success) {
-      releases.push(...youtubeData.releases)
-      platformStats.youtube = { ...youtubeData.platformStats, connected: true }
-      artistData.followers += youtubeData.platformStats.subscribers
-    } else {
-      platformStats.youtube.error = youtubeData.message || "Unknown YouTube error"
-    }
-  } catch (error: any) {
-    console.error("Error fetching YouTube data:", error)
-    platformStats.youtube.error = error.message || "Failed to fetch YouTube data"
-    errors.push(`YouTube: ${error.message || "Failed to fetch"}`)
+  } else {
+    errors.push(youtubeRes.error || "YouTube data fetch failed.")
+    platformStats.youtube = { connected: false, error: youtubeRes.error }
   }
 
-  // Fetch Apple Music data (placeholder)
-  try {
-    const appleMusicRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/apple-music`)
-    if (!appleMusicRes.ok) {
-      const errorText = await appleMusicRes.text()
-      throw new Error(`Apple Music API error: ${errorText}`)
+  // Process Apple Music data
+  if (appleMusicRes.success && appleMusicRes.data) {
+    allReleases.push(...(appleMusicRes.data.releases || []))
+    platformStats.appleMusic = appleMusicRes.data.platformStats?.appleMusic || { connected: false }
+    if (appleMusicRes.data.artistData) {
+      artistData = { ...artistData, ...appleMusicRes.data.artistData }
     }
-    const appleMusicData = await appleMusicRes.json()
-    if (appleMusicData.success) {
-      releases.push(...appleMusicData.releases)
-      platformStats.appleMusic = { ...appleMusicData.platformStats, connected: true }
-      artistData.followers += appleMusicData.platformStats.followers
-    } else {
-      platformStats.appleMusic.error = appleMusicData.message || "Unknown Apple Music error"
-    }
-  } catch (error: any) {
-    console.error("Error fetching Apple Music data:", error)
-    platformStats.appleMusic.error = error.message || "Failed to fetch Apple Music data"
-    errors.push(`Apple Music: ${error.message || "Failed to fetch"}`)
+  } else {
+    errors.push(appleMusicRes.error || "Apple Music data fetch failed.")
+    platformStats.appleMusic = { connected: false, error: appleMusicRes.error }
   }
 
-  // Fetch Amazon Music data (placeholder)
-  try {
-    const amazonMusicRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/amazon-music`)
-    if (!amazonMusicRes.ok) {
-      const errorText = await amazonMusicRes.text()
-      throw new Error(`Amazon Music API error: ${errorText}`)
+  // Process Amazon Music data
+  if (amazonMusicRes.success && amazonMusicRes.data) {
+    allReleases.push(...(amazonMusicRes.data.releases || []))
+    platformStats.amazonMusic = amazonMusicRes.data.platformStats?.amazonMusic || { connected: false }
+    if (amazonMusicRes.data.artistData) {
+      artistData = { ...artistData, ...amazonMusicRes.data.artistData }
     }
-    const amazonMusicData = await amazonMusicRes.json()
-    if (amazonMusicData.success) {
-      releases.push(...amazonMusicData.releases)
-      platformStats.amazonMusic = { ...amazonMusicData.platformStats, connected: true }
-      artistData.followers += amazonMusicData.platformStats.followers
-    } else {
-      platformStats.amazonMusic.error = amazonMusicData.message || "Unknown Amazon Music error"
-    }
-  } catch (error: any) {
-    console.error("Error fetching Amazon Music data:", error)
-    platformStats.amazonMusic.error = error.message || "Failed to fetch Amazon Music data"
-    errors.push(`Amazon Music: ${error.message || "Failed to fetch"}`)
+  } else {
+    errors.push(amazonMusicRes.error || "Amazon Music data fetch failed.")
+    platformStats.amazonMusic = { connected: false, error: amazonMusicRes.error }
   }
 
-  // Sort releases by releaseDate (newest first)
-  releases.sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime())
+  // Sort releases by releaseDate in descending order
+  allReleases.sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime())
 
-  if (errors.length > 0) {
+  if (errors.length > 0 && allReleases.length === 0) {
     return NextResponse.json(
       {
-        success: false,
-        message: `Errors occurred while fetching data: ${errors.join("; ")}`,
-        releases,
-        platformStats,
-        artistData,
+        releases: [],
+        platformStats: {},
+        artistData: null,
+        error: `Failed to fetch data from all sources: ${errors.join("; ")}`,
       },
       { status: 500 },
     )
   }
 
-  return NextResponse.json({ success: true, releases, platformStats, artistData })
+  return NextResponse.json({
+    releases: allReleases,
+    platformStats,
+    artistData,
+    error: errors.length > 0 ? `Partial data loaded. Errors: ${errors.join("; ")}` : null,
+  })
 }

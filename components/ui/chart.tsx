@@ -5,6 +5,8 @@ import type * as RechartsPrimitive from "recharts"
 import { ChartContainer as RechartsChartContainer, type ChartContainerProps } from "@tremor/react"
 import { cn } from "@/lib/utils"
 import { ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { CartesianGrid, Line, LineChart, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const
@@ -149,31 +151,35 @@ function getPayloadConfigFromPayload(config: ChartConfig, payload: unknown, key:
   return configLabelKey in config ? config[configLabelKey] : config[key as keyof typeof config]
 }
 
-type ChartProps = React.ComponentProps<"div"> & {
-  config: Record<string, { label?: string; color?: string }>
+interface ChartProps {
+  data: { name: string; value: number }[]
+  title: string
+  description: string
+  dataKey: string
 }
 
-const Chart = React.forwardRef<HTMLDivElement, ChartProps>(({ className, children, config, ...props }, ref) => {
-  const id = React.useId()
-  if (!config || Object.keys(config).length === 0) {
-    return null
-  }
+export function ChartComponent({ data, title, description, dataKey }: ChartProps) {
   return (
-    <ChartContainer
-      id={id}
-      ref={ref}
-      className={cn(
-        "[&_.recharts-tooltip-content>div]:bg-background [&_.recharts-tooltip-content>div]:border-border [&_.recharts-tooltip-content>div]:text-foreground [&_.recharts-tooltip-content>div]:rounded-md [&_.recharts-tooltip-content>div]:px-2 [&_.recharts-tooltip-content>div]:py-1 [&_.recharts-tooltip-content>div]:shadow-md [&_.recharts-tooltip-item]:flex [&_.recharts-label]:font-medium [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-axis.recharts-yAxis_.recharts-cartesian-axis-tick:first-child_text]:fill-foreground [&_.recharts-cartesian-axis.recharts-yAxis_.recharts-cartesian-axis-tick:last-child_text]:fill-foreground [&_.recharts-cartesian-grid_line]:stroke-border [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-dot[stroke='#fff']]:stroke-current [&_.recharts-active-dot[stroke='#fff']]:stroke-current [&_.recharts-active-dot[r='8']]:stroke-white [&_.recharts-wrapper]:outline-none",
-        className,
-      )}
-      config={config}
-      {...props}
-    >
-      {children}
-      <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-    </ChartContainer>
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey={dataKey} stroke="#8884d8" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
   )
-})
-Chart.displayName = "Chart"
+}
 
-export { Chart, ChartContainer, ChartStyle, ChartTooltip, ChartTooltipContent, useChart }
+export { ChartContainer, ChartStyle, ChartTooltip, ChartTooltipContent, useChart }
