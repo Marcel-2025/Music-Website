@@ -59,7 +59,7 @@ export async function GET() {
       if (appleMusicData.success) {
         allReleases.push(...appleMusicData.releases)
         platformStats.appleMusic = {
-          followers: appleMusicData.artist?.followers || 0,
+          followers: appleMusicData.artist?.followers || 0, // Placeholder, as Apple Music API doesn't provide this directly
           name: "Apple Music",
           connected: true,
         }

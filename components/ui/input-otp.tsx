@@ -31,14 +31,12 @@ const InputOTPSlot = React.forwardRef<
     ref={ref}
     index={index}
     className={cn(
-      "relative flex h-10 w-10 items-center justify-center border border-input text-sm transition-all first:rounded-l-md last:rounded-r-md",
-      "focus-within:ring-ring focus-within:relative focus-within:z-10",
+      "relative flex h-9 w-9 items-center justify-center border-y border-r border-input text-sm shadow-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md",
+      "focus-within:z-10 focus-within:ring-1 focus-within:ring-ring",
       className,
     )}
     {...props}
-  >
-    {props.children}
-  </Slot>
+  />
 ))
 InputOTPSlot.displayName = "InputOTPSlot"
 

@@ -7,8 +7,8 @@ import { ThemeProvider } from "@/components/theme-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Ehhm.s Music Portfolio",
-  description: "Official music releases and social media for Ehhm.s",
+  title: "Ehhm.s Music Release Dashboard",
+  description: "Track and showcase your music releases across Spotify, YouTube, and more.",
     generator: 'v0.dev'
 }
 
@@ -18,14 +18,9 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body className={inter.className}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark" // Set default theme to dark
-          enableSystem
-          disableTransitionOnChange
-        >
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           {children}
         </ThemeProvider>
       </body>

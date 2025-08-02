@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server"
 
-// Amazon Music does not provide a public API for fetching artist releases.
-// This route handler is a placeholder and will always return a "not available" message.
 export async function GET() {
+  // Amazon Music does not have a public API for fetching artist releases or stats.
+  // This route is a placeholder and will always return an empty array and disconnected status.
   return NextResponse.json({
-    success: false,
-    error: "Amazon Music API is not publicly available for fetching releases.",
+    success: true,
     releases: [],
+    artist: null,
+    error: "Amazon Music API not available",
   })
 }

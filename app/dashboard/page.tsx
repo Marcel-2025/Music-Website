@@ -84,6 +84,14 @@ export default function DashboardPage() {
     }
   }
 
+  // Redirect to the root page or implement dashboard-specific logic here if needed.
+  // This conditional redirect was causing a React Hook error.
+  // It's better to handle initial data loading state within the component.
+  // if (data === null) {
+  //   redirect("/")
+  //   return null
+  // }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
@@ -262,7 +270,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <span className="text-gray-400">Total Views:</span>
-                      <span className="text-white ml-2">{data.youtube.channel.totalViews.toLocaleString()}</span>
+                      <span className="text-white ml-2">{data.youtube.channel.viewCount.toLocaleString()}</span>
                     </div>
                   </div>
                   <Button size="sm" variant="outline" asChild>
