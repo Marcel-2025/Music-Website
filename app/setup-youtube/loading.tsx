@@ -2,19 +2,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export default function SetupYoutubeLoading() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
-      <div className="w-full max-w-md space-y-6 rounded-lg border bg-background p-6 shadow-lg">
-        <div className="space-y-2 text-center">
-          <Skeleton className="mx-auto h-10 w-1/2" />
-          <Skeleton className="mx-auto h-4 w-3/4" />
-        </div>
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </div>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-black to-gray-900 p-4">
+      <div className="w-full max-w-md space-y-6 rounded-lg bg-gray-800 p-8 shadow-lg">
+        <Skeleton className="h-8 w-3/4 mx-auto" />
+        <Skeleton className="h-6 w-full" />
         <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-4 w-1/2 mx-auto" />
       </div>
     </div>
   )

@@ -14,7 +14,7 @@ interface Release {
   totalTracks?: number
   artists?: string
   views?: number
-  isNew?: boolean // Added for "NEU" badge
+  isNew?: boolean
 }
 
 interface PlatformStats {
@@ -22,22 +22,26 @@ interface PlatformStats {
     followers: number
     name: string
     connected: boolean
+    error?: string
   }
   youtube?: {
     subscribers: number
     videoCount: number
     name: string
     connected: boolean
+    error?: string
   }
   appleMusic?: {
     followers: number
     name: string
     connected: boolean
+    error?: string
   }
   amazonMusic?: {
     followers: number
     name: string
     connected: boolean
+    error?: string
   }
 }
 
@@ -47,6 +51,7 @@ interface ArtistData {
   image: string
   genres: string[]
   popularity: number
+  spotifyUrl?: string
 }
 
 interface MusicData {
@@ -65,41 +70,41 @@ export function useMusicData(): MusicData {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchAllData = useCallback(async () => {
+  const fetchMusicData = useCallback(async () => {
+    setLoading(true)
+    setError(null)
     try {
-      setLoading(true)
       const response = await fetch("/api/releases")
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Failed to fetch releases: ${response.status} - ${errorText.substring(0, 200)}...`)
-      }
       const data = await response.json()
 
-      if (data.success) {
-        // Check for success flag from /api/releases
-        // Mark releases as new if they are recent (e.g., within the last 30 days)
-        const updatedReleases = data.releases.map((release: Release) => ({
-          ...release,
-          isNew: new Date(release.releaseDate) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-        }))
-        setReleases(updatedReleases || [])
-        setPlatformStats(data.platformStats || {})
-        setArtistData(data.artistData || null) // Get artistData directly from the aggregated response
-        setError(data.errors ? data.errors.join(", ") : null) // Display aggregated errors
-      } else {
-        setError(data.error || "Failed to fetch release data from API aggregator.")
+      if (!response.ok) {
+        setError(data.error || "An unknown error occurred while fetching music data.")
+        setReleases([])
+        setPlatformStats({})
+        setArtistData(null)
+        return
+      }
+
+      setReleases(data.releases || [])
+      setPlatformStats(data.platformStats || {})
+      setArtistData(data.artistData || null)
+      if (data.error) {
+        setError(data.error) // Set partial error if some data loaded but with issues
       }
     } catch (err: any) {
-      setError(err.message || "Failed to connect to APIs")
-      console.error("API fetch error:", err)
+      console.error("Failed to fetch music data:", err)
+      setError(`Failed to fetch music data: ${err.message}`)
+      setReleases([])
+      setPlatformStats({})
+      setArtistData(null)
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    fetchAllData()
-  }, [fetchAllData])
+    fetchMusicData()
+  }, [fetchMusicData])
 
-  return { releases, platformStats, artistData, loading, error, refetch: fetchAllData }
+  return { releases, platformStats, artistData, loading, error, refetch: fetchMusicData }
 }

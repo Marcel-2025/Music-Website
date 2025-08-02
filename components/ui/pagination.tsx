@@ -1,4 +1,5 @@
-import * as React from "react"
+import Link from "next/link"
+import type * as React from "react"
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -19,30 +20,28 @@ const PaginationList = ({ className, ...props }: React.ComponentProps<"ul">) => 
 )
 PaginationList.displayName = "PaginationList"
 
-const PaginationItem = React.forwardRef<HTMLLIElement, React.ComponentProps<"li">>(({ className, ...props }, ref) => (
-  <li ref={ref} className={cn("", className)} {...props} />
-))
+const PaginationItem = ({ className, ...props }: React.ComponentProps<"li">) => (
+  <li className={cn("", className)} {...props} />
+)
 PaginationItem.displayName = "PaginationItem"
 
 type PaginationLinkProps = {
   isActive?: boolean
 } & Pick<ButtonProps, "size"> &
-  React.ComponentProps<typeof PaginationItem>
+  React.ComponentProps<typeof Link>
 
 const PaginationLink = ({ className, isActive, size = "icon", ...props }: PaginationLinkProps) => (
-  <PaginationItem>
-    <a
-      aria-current={isActive ? "page" : undefined}
-      className={cn(
-        buttonVariants({
-          variant: isActive ? "outline" : "ghost",
-          size,
-        }),
-        className,
-      )}
-      {...props}
-    />
-  </PaginationItem>
+  <Link
+    aria-current={isActive ? "page" : undefined}
+    className={cn(
+      buttonVariants({
+        variant: isActive ? "outline" : "ghost",
+        size,
+      }),
+      className,
+    )}
+    {...props}
+  />
 )
 PaginationLink.displayName = "PaginationLink"
 

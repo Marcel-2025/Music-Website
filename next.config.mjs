@@ -14,7 +14,11 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "i.ytimg.com", // YouTube images
+        hostname: "yt3.ggpht.com", // YouTube channel images
+      },
+      {
+        protocol: "https",
+        hostname: "i.ytimg.com", // YouTube video thumbnails
       },
       {
         protocol: "https",
@@ -29,20 +33,12 @@ const nextConfig = {
         hostname: "blob.v0.dev", // v0 placeholder images
       },
       {
-        protocol: "http",
-        hostname: "localhost", // For local placeholder images
-      },
-      {
         protocol: "https",
         hostname: "via.placeholder.com", // Generic placeholder images
-      },
-      {
-        protocol: "https",
-        hostname: "placehold.co", // Another generic placeholder
       },
     ],
     unoptimized: true,
   },
-}
+};
 
-export default nextConfig
+export default nextConfig;

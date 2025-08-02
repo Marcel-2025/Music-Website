@@ -65,8 +65,9 @@ const NavigationMenuContent = React.forwardRef<
   <NavigationMenuPrimitive.Content
     ref={ref}
     className={cn(
-      "left-0 top-0 w-full data-[animate-in]:fade-in data-[animate-out]:fade-out data-[animate-in]:slide-in-from-top-1 data-[animate-out]:slide-out-to-top-1 md:absolute md:w-auto md:data-[animate-in]:zoom-in-90 md:data-[animate-out]:zoom-out-90 md:data-[animate-in]:slide-in-from-top-2 md:data-[animate-out]:slide-out-to-top-2",
-      "absolute h-auto w-full justify-center rounded-md border bg-popover p-4 text-popover-foreground shadow-lg",
+      "left-0 top-0 w-full data-[animate-in]:fade-in data-[animate-out]:fade-out data-[animate-in]:slide-in-from-top-1 data-[animate-out]:slide-out-to-top-1 md:absolute md:w-auto ",
+      "ease-in-out-quad data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+      "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-left-1 data-[state=open]:slide-in-from-left-1",
       className,
     )}
     {...props}
@@ -83,7 +84,7 @@ const NavigationMenuViewport = React.forwardRef<
   <div className={cn("absolute left-0 top-full flex justify-center")}>
     <NavigationMenuPrimitive.Viewport
       className={cn(
-        "relative h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-90 md:w-[var(--radix-navigation-menu-viewport-width)]",
+        "relative h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 md:w-[var(--radix-navigation-menu-viewport-width)]",
         className,
       )}
       ref={ref}

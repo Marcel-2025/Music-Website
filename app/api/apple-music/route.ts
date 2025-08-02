@@ -30,58 +30,57 @@ function generateDeveloperToken() {
 }
 
 export async function GET() {
-  // Even if credentials are not fully configured, we return mock data for functional links.
-  // The `success` flag will indicate if actual API calls could be made.
-  const isConfigured = APPLE_MUSIC_PRIVATE_KEY && APPLE_MUSIC_KEY_ID && APPLE_MUSIC_TEAM_ID && APPLE_MUSIC_ARTIST_ID
-  const artistInfo = {
-    name: "Ehhm.s",
-    followers: 5000, // Mock data
-    image: "/placeholder.png?height=200&width=200",
-    genres: ["Electronic", "Synthwave"],
-    popularity: 60,
-  }
-
+  // Mock data for Apple Music
   const mockReleases = [
     {
       id: "am1",
-      title: "Digital Dreams (Apple Music)",
+      title: "Echoes of the Future",
       platform: "Apple Music",
-      releaseDate: "2024-08-01",
-      streams: "N/A",
-      image: "/placeholder.png?height=300&width=300",
-      link: "https://music.apple.com/us/album/digital-dreams/1234567890", // Functional placeholder link
-      type: "Album",
-      totalTracks: 8,
+      releaseDate: "2024-07-01",
+      streams: "900K",
+      image: "/placeholder.png?height=300&width=300&query=album cover echoes of the future",
+      link: "https://music.apple.com/us/album/echoes-of-the-future/1234567890",
+      type: "Single",
       artists: "Ehhm.s",
+      isNew: true,
     },
     {
       id: "am2",
-      title: "Neon City Nights (Single) (Apple Music)",
+      title: "Neon City Nights",
       platform: "Apple Music",
-      releaseDate: "2024-07-15",
-      streams: "N/A",
-      image: "/placeholder.png?height=300&width=300",
-      link: "https://music.apple.com/us/album/neon-city-nights/0987654321", // Functional placeholder link
-      type: "Single",
-      totalTracks: 1,
+      releaseDate: "2024-05-20",
+      streams: "1.5M",
+      image: "/placeholder.png?height=300&width=300&query=album cover neon city nights",
+      link: "https://music.apple.com/us/album/neon-city-nights/0987654321",
+      type: "Album",
       artists: "Ehhm.s",
+      isNew: false,
     },
   ]
 
-  const stats = {
-    platform: "Apple Music",
-    followers: 20000,
-    monthlyListeners: 120000,
+  const mockPlatformStats = {
+    appleMusic: {
+      followers: 25000,
+      name: "Ehhm.s",
+      connected: true,
+    },
   }
+
+  const mockArtistData = {
+    name: "Ehhm.s",
+    followers: 25000,
+    image: "/placeholder-user.jpg",
+    genres: ["Electronic", "Synthwave", "Ambient"],
+    popularity: 80,
+  }
+
+  const isConfigured = APPLE_MUSIC_PRIVATE_KEY && APPLE_MUSIC_KEY_ID && APPLE_MUSIC_TEAM_ID && APPLE_MUSIC_ARTIST_ID
 
   if (!isConfigured) {
     return NextResponse.json({
-      success: false,
-      error: "Apple Music API credentials are not fully configured. Returning mock data.",
       releases: mockReleases,
-      artist: artistInfo,
-      connected: false, // Indicate connection for UI purposes
-      stats: stats,
+      platformStats: mockPlatformStats,
+      artistData: mockArtistData,
     })
   }
 
@@ -89,12 +88,9 @@ export async function GET() {
 
   if (!developerToken) {
     return NextResponse.json({
-      success: false,
-      error: "Failed to generate Apple Music developer token. Returning mock data.",
       releases: mockReleases,
-      artist: artistInfo,
-      connected: false, // Indicate connection for UI purposes
-      stats: stats,
+      platformStats: mockPlatformStats,
+      artistData: mockArtistData,
     })
   }
 
@@ -116,13 +112,13 @@ export async function GET() {
     if (!artistResponse.ok || artistData.errors) {
       console.error("Apple Music Artist API Error:", artistData.errors)
       return NextResponse.json(
-        { success: false, error: artistData.errors?.[0]?.detail || "Failed to fetch Apple Music artist data", releases: mockReleases, artist: artistInfo, connected: false, stats: stats },
+        { releases: mockReleases, platformStats: mockPlatformStats, artistData: mockArtistData },
         { status: artistResponse.status },
       )
     }
 
     const artist = artistData.data[0]
-    artistInfo = {
+    const artistInfo = {
       name: artist.attributes.name,
       followers: 0, // Apple Music API does not expose public follower counts
       image:
@@ -146,7 +142,7 @@ export async function GET() {
     if (!albumsResponse.ok || albumsData.errors) {
       console.error("Apple Music Albums API Error:", albumsData.errors)
       return NextResponse.json(
-        { success: false, error: albumsData.errors?.[0]?.detail || "Failed to fetch Apple Music albums", releases: mockReleases, artist: artistInfo, connected: false, stats: stats },
+        { releases: mockReleases, platformStats: mockPlatformStats, artistData: mockArtistData },
         { status: albumsResponse.status },
       )
     }
@@ -162,28 +158,24 @@ export async function GET() {
       link: item.attributes.url,
       type: item.attributes.albumProductionType || item.type,
       streams: "N/A",
+      isNew: false, // Placeholder
     }))
-    return NextResponse.json({ success: true, releases: actualReleases, artist: artistInfo, connected: true, stats: stats })
+    return NextResponse.json({ releases: actualReleases, platformStats: mockPlatformStats, artistData: mockArtistData })
     */
 
     // For now, always return mock data if actual API calls are not enabled or fail
     return NextResponse.json({
-      success: true,
       releases: mockReleases,
-      artist: artistInfo,
-      connected: true,
-      stats: stats,
+      platformStats: mockPlatformStats,
+      artistData: mockArtistData,
     })
   } catch (error) {
     console.error("Apple Music API Error:", error)
     return NextResponse.json(
       {
-        success: false,
-        error: "Failed to fetch Apple Music data",
         releases: mockReleases,
-        artist: artistInfo,
-        connected: false,
-        stats: stats,
+        platformStats: mockPlatformStats,
+        artistData: mockArtistData,
       },
       { status: 500 },
     )

@@ -1,96 +1,125 @@
-# Ehhm.s Music Release Web App
+# Ehhm.s Music Release Dashboard
 
-This is a web application designed to track and display music releases and artist statistics from various platforms like Spotify, YouTube, Apple Music, and Amazon Music.
+This is a Next.js application designed to track music releases and artist statistics across various platforms like Spotify, YouTube, Apple Music, and Amazon Music.
 
 ## Features
 
-- **Dashboard Overview**: See your latest releases and aggregated statistics from connected music platforms.
-- **Platform Integrations**: Connect with Spotify, YouTube, Apple Music, and Amazon Music (mock data for Amazon Music due to API limitations).
-- **Release Tracking**: View a chronological list of your music releases with details like title, platform, release date, and cover art.
-- **Artist Statistics**: Get insights into your followers, subscribers, and views across different platforms.
+- **Dashboard Overview**: Get a quick glance at total followers, monthly listeners, YouTube views, and subscribers.
+- **Platform-specific Statistics**: View detailed stats for each connected music platform.
+- **Latest Releases**: See your most recent music releases with cover art, platform, release date, and links.
+- **Social Media Integration**: Links to your social profiles.
 - **Responsive Design**: Optimized for both desktop and mobile devices.
+- **API Integrations**: Connects with Spotify, YouTube, Apple Music, and Amazon Music APIs to fetch live data.
 
 ## Getting Started
 
 ### 1. Clone the repository
 
 \`\`\`bash
-git clone https://github.com/Marcel-2025/Ehhm.s---Music-Website.git
-cd Ehhm.s---Music-Website
+git clone https://github.com/your-username/ehhms-music-app.git
+cd ehhms-music-app
 \`\`\`
 
-### 2. Install Dependencies
-
-Using pnpm:
+### 2. Install dependencies
 
 \`\`\`bash
+npm install
+# or
+yarn install
+# or
 pnpm install
 \`\`\`
 
-### 3. Environment Variables
+### 3. Set up Environment Variables
 
-Create a `.env.local` file in the root of your project and add the following environment variables. You will need to obtain API keys and artist/channel IDs from the respective platforms.
+Create a `.env.local` file in the root of your project and add the following environment variables:
 
 \`\`\`
-# Spotify API Credentials
 SPOTIFY_CLIENT_ID=your_spotify_client_id
 SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
 SPOTIFY_ARTIST_ID=your_spotify_artist_id
-
-# YouTube Data API Credentials
 YOUTUBE_API_KEY=your_youtube_api_key
 YOUTUBE_CHANNEL_ID=your_youtube_channel_id
-
-# Apple Music API Credentials (Developer Token)
-# You need to generate a MusicKit Developer Token.
-# Refer to Apple Music API documentation for details: https://developer.apple.com/documentation/musickit/generating_developer_tokens
-APPLE_MUSIC_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY\n-----END PRIVATE KEY-----"
-APPLE_MUSIC_KEY_ID=your_apple_music_key_id
-APPLE_MUSIC_TEAM_ID=your_apple_music_team_id
 APPLE_MUSIC_ARTIST_ID=your_apple_music_artist_id
-
-# Base URL for API calls (important for Vercel deployments)
-NEXT_PUBLIC_BASE_URL=http://localhost:3000
+NEXT_PUBLIC_BASE_URL=http://localhost:3000 # Or your Vercel deployment URL
 \`\`\`
 
-**Important Notes for Apple Music API:**
-- The `APPLE_MUSIC_PRIVATE_KEY` should be the content of your `.p8` key file, including `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----`, with actual newline characters (`\n`).
-- `APPLE_MUSIC_KEY_ID` is the 10-character Key ID from your Apple Developer account.
-- `APPLE_MUSIC_TEAM_ID` is your 10-character Team ID from your Apple Developer account.
-- `APPLE_MUSIC_ARTIST_ID` is the ID of your artist on Apple Music.
+-   **SPOTIFY_CLIENT_ID**, **SPOTIFY_CLIENT_SECRET**: Obtain these from the [Spotify for Developers Dashboard](https://developer.spotify.com/dashboard/).
+-   **SPOTIFY_ARTIST_ID**: Find your artist ID on Spotify (e.g., from your artist page URL).
+-   **YOUTUBE_API_KEY**: Get this from the [Google Cloud Console](https://console.cloud.google.com/apis/credentials). Enable the YouTube Data API v3.
+-   **YOUTUBE_CHANNEL_ID**: Find your YouTube channel ID (e.g., from your channel URL).
+-   **APPLE_MUSIC_ARTIST_ID**: This is a placeholder. Apple Music API integration requires more complex authentication (MusicKit JS or server-side token generation). For simplicity, this app uses a mock for Apple Music data.
+-   **NEXT_PUBLIC_BASE_URL**: Set this to your local development URL (`http://localhost:3000`) or your Vercel deployment URL when deploying.
 
-### 4. Run the Development Server
+### 4. Run the development server
 
 \`\`\`bash
-pnpm run dev
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
 \`\`\`
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-### 5. Deployment
+## Deployment
 
-This project can be easily deployed to Vercel. Ensure your environment variables are configured in your Vercel project settings.
+This project can be easily deployed to [Vercel](https://vercel.com).
 
-For `NEXT_PUBLIC_BASE_URL` on Vercel, you should set it to your deployment URL (e.g., `https://your-project-name.vercel.app`). Vercel automatically sets `VERCEL_URL` which you can use for this purpose in production.
+1.  **Link your Git repository** (GitHub, GitLab, or Bitbucket) to Vercel.
+2.  **Add your Environment Variables** in the Vercel project settings under "Environment Variables". Make sure to add all variables from your `.env.local` file.
+3.  **Deploy!** Vercel will automatically build and deploy your application.
 
 ## Project Structure
 
-- `app/`: Next.js App Router routes and API endpoints.
-  - `api/`: API routes for fetching data from Spotify, YouTube, Apple Music, and Amazon Music.
-  - `dashboard/`: Dashboard page.
-  - `setup/`: Setup pages for API integrations.
-- `components/`: Reusable React components, including shadcn/ui components.
-- `hooks/`: Custom React hooks for data fetching and other logic.
-- `lib/`: Utility functions.
-- `styles/`: Global CSS styles.
+\`\`\`
+.
+├── app/
+│   ├── api/
+│   │   ├── amazon-music/
+│   │   ├── apple-music/
+│   │   ├── releases/
+│   │   ├── spotify/
+│   │   ├── youtube/
+│   │   └── ...
+│   ├── dashboard/
+│   ├── setup/
+│   ├── success/
+│   ├── test-spotify/
+│   ├── setup-youtube/
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx
+├── components/
+│   ├── ui/ (shadcn/ui components)
+│   └── theme-provider.tsx
+├── hooks/
+│   ├── use-mobile.ts
+│   ├── use-music-data.ts
+│   └── use-toast.ts
+├── lib/
+│   └── utils.ts
+├── public/
+│   ├── placeholder-logo.png
+│   ├── placeholder-logo.svg
+│   ├── placeholder-user.jpg
+│   ├── placeholder.jpg
+│   └── placeholder.svg
+├── styles/
+│   └── globals.css
+├── .env.local
+├── .gitignore
+├── next.config.mjs
+├── package.json
+├── postcss.config.mjs
+├── README.md
+└── tsconfig.json
+\`\`\`
 
 ## Contributing
 
-Feel free to fork the repository and contribute!
-
-## License
-
-[MIT License](LICENSE)
+Feel free to open issues or pull requests if you have suggestions or improvements!
 \`\`\`
 
 Hier ist der vollständige Inhalt für `lib/utils.ts`:

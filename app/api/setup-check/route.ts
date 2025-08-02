@@ -11,17 +11,21 @@ export async function GET() {
   const appleMusicTeamId = process.env.APPLE_MUSIC_TEAM_ID
   const appleMusicArtistId = process.env.APPLE_MUSIC_ARTIST_ID
 
+  const spotifyConnected =
+    !!process.env.SPOTIFY_CLIENT_ID && !!process.env.SPOTIFY_CLIENT_SECRET && !!process.env.SPOTIFY_ARTIST_ID
+  const youtubeConnected = !!process.env.YOUTUBE_API_KEY && !!process.env.YOUTUBE_CHANNEL_ID
+
   const status = {
     spotify: {
       clientId: !!spotifyClientId,
       clientSecret: !!spotifyClientSecret,
       artistId: !!spotifyArtistId,
-      configured: !!spotifyClientId && !!spotifyClientSecret && !!spotifyArtistId,
+      configured: spotifyConnected,
     },
     youtube: {
       apiKey: !!youtubeApiKey,
       channelId: !!youtubeChannelId,
-      configured: !!youtubeApiKey && !!youtubeChannelId,
+      configured: youtubeConnected,
     },
     appleMusic: {
       privateKey: !!appleMusicPrivateKey,
@@ -35,5 +39,5 @@ export async function GET() {
     },
   }
 
-  return NextResponse.json(status)
+  return NextResponse.json({ ...status, spotifyConnected, youtubeConnected })
 }

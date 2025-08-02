@@ -16,9 +16,12 @@ import {
   Apple,
   CloudIcon as SoundCloud,
   Loader2,
-  Eye,
 } from "lucide-react"
 import { useMusicData } from "@/hooks/use-music-data"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState } from "react"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 interface Release {
   id: string
@@ -69,6 +72,9 @@ interface ArtistData {
 
 export default function EhhmsPortfolio() {
   const { releases, platformStats, artistData, loading, error, refetch: fetchAllData } = useMusicData()
+  const isMobile = useIsMobile()
+
+  const [activePlatformTab, setActivePlatformTab] = useState("spotify") // Default to Spotify
 
   const socialLinks = [
     { name: "Instagram", icon: Instagram, url: "https://instagram.com/ehhm.s", handle: "@ehhm.s" },
@@ -143,10 +149,9 @@ export default function EhhmsPortfolio() {
     )
   }
 
-  const spotifyReleases = releases.filter((r) => r.platform === "Spotify")
-  const youtubeReleases = releases.filter((r) => r.platform === "YouTube")
-  const appleMusicReleases = releases.filter((r) => r.platform === "Apple Music")
-  const amazonMusicReleases = releases.filter((r) => r.platform === "Amazon Music")
+  const filteredReleases = releases.filter(
+    (release) => activePlatformTab === "all" || release.platform.toLowerCase().replace(/\s/g, "") === activePlatformTab,
+  )
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-black text-white">
@@ -198,308 +203,113 @@ export default function EhhmsPortfolio() {
       </main>
 
       {/* Music Releases */}
-      <section id="releases" className="py-16 px-4">
+      <section id="releases" className="py-16 px-4 w-full">
         <div className="container mx-auto">
           <h3 className="text-3xl font-bold text-white mb-8">Latest Releases</h3>
 
-          {/* Spotify Releases Section */}
-          {spotifyReleases.length > 0 && (
-            <div className="mb-12">
-              <div className="flex items-center gap-3 mb-6">
-                <Spotify className="w-8 h-8 text-green-400" />
-                <h4 className="text-2xl font-semibold text-white">Spotify Releases</h4>
-                <Badge variant="outline" className="text-green-400 border-green-400">
-                  {spotifyReleases.length} Tracks/Albums
-                </Badge>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {spotifyReleases.map((release) => {
-                  const PlatformIcon = getPlatformIcon(release.platform)
-                  const platformColor = getPlatformColor(release.platform)
-                  return (
-                    <Card
-                      key={`${release.platform}-${release.id}`}
-                      className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-all duration-300 group"
-                    >
-                      <CardContent className="p-0">
-                        <div className="relative">
-                          <Image
-                            src={release.image || "/placeholder.png?height=300&width=300"}
-                            alt={release.title}
-                            width={300}
-                            height={300}
-                            className="w-full aspect-square object-cover rounded-t-lg"
-                          />
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-t-lg flex items-center justify-center">
-                            <Button asChild size="lg" className="bg-white/20 hover:bg-white/30 backdrop-blur-sm">
-                              <Link href={release.link} target="_blank" rel="noopener noreferrer">
-                                <Play className="w-6 h-6 mr-2" />
-                                Listen
-                              </Link>
-                            </Button>
-                          </div>
-                          <Badge className="absolute top-3 right-3 bg-black/70 text-white">{release.type}</Badge>
-                          <div className="absolute top-3 left-3">
-                            <PlatformIcon className={`w-6 h-6 ${platformColor}`} />
-                          </div>
-                        </div>
-                        <div className="p-4">
-                          <div className="flex items-center gap-2 mb-2">
-                            <PlatformIcon className={`w-5 h-5 ${platformColor}`} />
-                            <span className="text-sm text-gray-400">{release.platform}</span>
-                          </div>
-                          <h4 className="text-lg font-semibold text-white mb-2 line-clamp-2">{release.title}</h4>
-                          <div className="flex justify-between items-center text-sm text-gray-400 mb-3">
-                            <span>{new Date(release.releaseDate).toLocaleDateString()}</span>
-                            <span className="flex items-center gap-1">
-                              <Music className="w-3 h-3" />
-                              {release.streams}
-                            </span>
-                          </div>
-                          <Button
-                            asChild
-                            className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-                          >
+          {isMobile ? (
+            <div className="mb-8">
+              <Select value={activePlatformTab} onValueChange={setActivePlatformTab}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a platform" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="spotify">Spotify</SelectItem>
+                  <SelectItem value="youtube">YouTube</SelectItem>
+                  <SelectItem value="applemusic">Apple Music</SelectItem>
+                  <SelectItem value="amazonmusic">Amazon Music</SelectItem>
+                  <SelectItem value="all">All Platforms</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <Tabs value={activePlatformTab} onValueChange={setActivePlatformTab} className="mb-8">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="spotify">Spotify</TabsTrigger>
+                <TabsTrigger value="youtube">YouTube</TabsTrigger>
+                <TabsTrigger value="applemusic">Apple Music</TabsTrigger>
+                <TabsTrigger value="amazonmusic">Amazon Music</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {filteredReleases.length > 0 ? (
+              filteredReleases.map((release) => {
+                const PlatformIcon = getPlatformIcon(release.platform)
+                const platformColor = getPlatformColor(release.platform)
+                return (
+                  <Card
+                    key={`${release.platform}-${release.id}`}
+                    className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-all duration-300 group"
+                  >
+                    <CardContent className="p-0">
+                      <div className="relative">
+                        <Image
+                          src={release.image || "/placeholder.png?height=300&width=300"}
+                          alt={release.title}
+                          width={300}
+                          height={300}
+                          className="w-full aspect-square object-cover rounded-t-lg"
+                        />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-t-lg flex items-center justify-center">
+                          <Button asChild size="lg" className="bg-white/20 hover:bg-white/30 backdrop-blur-sm">
                             <Link href={release.link} target="_blank" rel="noopener noreferrer">
-                              Listen on Spotify
-                              <ExternalLink className="w-4 h-4 ml-2" />
+                              <Play className="w-6 h-6 mr-2" />
+                              Listen
                             </Link>
                           </Button>
                         </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* YouTube Releases Section */}
-          {youtubeReleases.length > 0 && (
-            <div className="mb-12">
-              <div className="flex items-center gap-3 mb-6">
-                <Youtube className="w-8 h-8 text-red-400" />
-                <h4 className="text-2xl font-semibold text-white">YouTube Videos</h4>
-                <Badge variant="outline" className="text-red-400 border-red-400">
-                  {youtubeReleases.length} Videos
-                </Badge>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {youtubeReleases.map((release) => {
-                  const PlatformIcon = getPlatformIcon(release.platform)
-                  const platformColor = getPlatformColor(release.platform)
-                  return (
-                    <Card
-                      key={`${release.platform}-${release.id}`}
-                      className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-all duration-300 group"
-                    >
-                      <CardContent className="p-0">
-                        <div className="relative">
-                          <Image
-                            src={release.image || "/placeholder.png?height=300&width=300"}
-                            alt={release.title}
-                            width={300}
-                            height={300}
-                            className="w-full aspect-video object-cover rounded-t-lg"
-                          />
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-t-lg flex items-center justify-center">
-                            <Button asChild size="lg" className="bg-white/20 hover:bg-white/30 backdrop-blur-sm">
-                              <Link href={release.link} target="_blank" rel="noopener noreferrer">
-                                <Play className="w-6 h-6 mr-2" />
-                                Watch
-                              </Link>
-                            </Button>
-                          </div>
-                          <Badge className="absolute top-3 right-3 bg-black/70 text-white">{release.type}</Badge>
-                          <div className="absolute top-3 left-3">
-                            <PlatformIcon className={`w-6 h-6 ${platformColor}`} />
-                          </div>
+                        <Badge className="absolute top-3 right-3 bg-black/70 text-white">{release.type}</Badge>
+                        <div className="absolute top-3 left-3">
+                          <PlatformIcon className={`w-6 h-6 ${platformColor}`} />
                         </div>
-                        <div className="p-4">
-                          <div className="flex items-center gap-2 mb-2">
-                            <PlatformIcon className={`w-5 h-5 ${platformColor}`} />
-                            <span className="text-sm text-gray-400">{release.platform}</span>
-                          </div>
-                          <h4 className="text-lg font-semibold text-white mb-2 line-clamp-2">{release.title}</h4>
-                          <div className="flex justify-between items-center text-sm text-gray-400 mb-3">
-                            <span>{new Date(release.releaseDate).toLocaleDateString()}</span>
-                            <span className="flex items-center gap-1">
-                              <Eye className="w-3 h-3" />
-                              {release.streams}
-                            </span>
-                          </div>
-                          <Button
-                            asChild
-                            className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
-                          >
-                            <Link href={release.link} target="_blank" rel="noopener noreferrer">
-                              Watch on YouTube
-                              <ExternalLink className="w-4 h-4 ml-2" />
-                            </Link>
-                          </Button>
+                      </div>
+                      <div className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <PlatformIcon className={`w-5 h-5 ${platformColor}`} />
+                          <span className="text-sm text-gray-400">{release.platform}</span>
                         </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Apple Music Releases Section */}
-          {appleMusicReleases.length > 0 && (
-            <div className="mb-12">
-              <div className="flex items-center gap-3 mb-6">
-                <Apple className="w-8 h-8 text-gray-400" />
-                <h4 className="text-2xl font-semibold text-white">Apple Music Releases</h4>
-                <Badge variant="outline" className="text-gray-400 border-gray-400">
-                  {appleMusicReleases.length} Tracks/Albums
-                </Badge>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {appleMusicReleases.map((release) => {
-                  const PlatformIcon = getPlatformIcon(release.platform)
-                  const platformColor = getPlatformColor(release.platform)
-                  return (
-                    <Card
-                      key={`${release.platform}-${release.id}`}
-                      className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-all duration-300 group"
-                    >
-                      <CardContent className="p-0">
-                        <div className="relative">
-                          <Image
-                            src={release.image || "/placeholder.png?height=300&width=300"}
-                            alt={release.title}
-                            width={300}
-                            height={300}
-                            className="w-full aspect-square object-cover rounded-t-lg"
-                          />
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-t-lg flex items-center justify-center">
-                            <Button asChild size="lg" className="bg-white/20 hover:bg-white/30 backdrop-blur-sm">
-                              <Link href={release.link} target="_blank" rel="noopener noreferrer">
-                                <Play className="w-6 h-6 mr-2" />
-                                Listen
-                              </Link>
-                            </Button>
-                          </div>
-                          <Badge className="absolute top-3 right-3 bg-black/70 text-white">{release.type}</Badge>
-                          <div className="absolute top-3 left-3">
-                            <PlatformIcon className={`w-6 h-6 ${platformColor}`} />
-                          </div>
+                        <h4 className="text-lg font-semibold text-white mb-2 line-clamp-2">{release.title}</h4>
+                        <div className="flex justify-between items-center text-sm text-gray-400 mb-3">
+                          <span>{new Date(release.releaseDate).toLocaleDateString()}</span>
+                          <span className="flex items-center gap-1">
+                            <Music className="w-3 h-3" />
+                            {release.streams}
+                          </span>
                         </div>
-                        <div className="p-4">
-                          <div className="flex items-center gap-2 mb-2">
-                            <PlatformIcon className={`w-5 h-5 ${platformColor}`} />
-                            <span className="text-sm text-gray-400">{release.platform}</span>
-                          </div>
-                          <h4 className="text-lg font-semibold text-white mb-2 line-clamp-2">{release.title}</h4>
-                          <div className="flex justify-between items-center text-sm text-gray-400 mb-3">
-                            <span>{new Date(release.releaseDate).toLocaleDateString()}</span>
-                            <span className="flex items-center gap-1">
-                              <Music className="w-3 h-3" />
-                              {release.streams}
-                            </span>
-                          </div>
-                          <Button
-                            asChild
-                            className="w-full bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700"
-                          >
-                            <Link href={release.link} target="_blank" rel="noopener noreferrer">
-                              Listen on Apple Music
-                              <ExternalLink className="w-4 h-4 ml-2" />
-                            </Link>
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
+                        <Button
+                          asChild
+                          className={`w-full ${
+                            release.platform === "Spotify"
+                              ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                              : release.platform === "YouTube"
+                                ? "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                                : release.platform === "Apple Music"
+                                  ? "bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700"
+                                  : release.platform === "Amazon Music"
+                                    ? "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+                                    : ""
+                          }`}
+                        >
+                          <Link href={release.link} target="_blank" rel="noopener noreferrer">
+                            Listen on {release.platform}
+                            <ExternalLink className="w-4 h-4 ml-2" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <Music className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-400 text-lg">No releases found for this platform.</p>
+                <p className="text-gray-500 text-sm">Check your API configurations or select another platform.</p>
               </div>
-            </div>
-          )}
-
-          {/* Amazon Music Releases Section */}
-          {amazonMusicReleases.length > 0 && (
-            <div className="mb-12">
-              <div className="flex items-center gap-3 mb-6">
-                <Music className="w-8 h-8 text-orange-400" />
-                <h4 className="text-2xl font-semibold text-white">Amazon Music Releases</h4>
-                <Badge variant="outline" className="text-orange-400 border-orange-400">
-                  {amazonMusicReleases.length} Tracks/Albums
-                </Badge>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {amazonMusicReleases.map((release) => {
-                  const PlatformIcon = getPlatformIcon(release.platform)
-                  const platformColor = getPlatformColor(release.platform)
-                  return (
-                    <Card
-                      key={`${release.platform}-${release.id}`}
-                      className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-all duration-300 group"
-                    >
-                      <CardContent className="p-0">
-                        <div className="relative">
-                          <Image
-                            src={release.image || "/placeholder.png?height=300&width=300"}
-                            alt={release.title}
-                            width={300}
-                            height={300}
-                            className="w-full aspect-square object-cover rounded-t-lg"
-                          />
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-t-lg flex items-center justify-center">
-                            <Button asChild size="lg" className="bg-white/20 hover:bg-white/30 backdrop-blur-sm">
-                              <Link href={release.link} target="_blank" rel="noopener noreferrer">
-                                <Play className="w-6 h-6 mr-2" />
-                                Listen
-                              </Link>
-                            </Button>
-                          </div>
-                          {release.isNew && (
-                            <Badge className="absolute top-3 right-3 bg-black/70 text-white">NEU</Badge>
-                          )}
-                          <div className="absolute top-3 left-3">
-                            <PlatformIcon className={`w-6 h-6 ${platformColor}`} />
-                          </div>
-                        </div>
-                        <div className="p-4">
-                          <div className="flex items-center gap-2 mb-1">
-                            <PlatformIcon className={`w-5 h-5 ${platformColor}`} />
-                            <span className="text-sm text-gray-400">{release.platform}</span>
-                          </div>
-                          <h4 className="text-lg font-semibold text-white line-clamp-2">{release.title}</h4>
-                          <p className="text-sm text-gray-400 mb-2">by {release.artists}</p>
-                          <div className="flex justify-between items-center text-sm text-gray-400 mb-3">
-                            <span>{new Date(release.releaseDate).getFullYear()}</span>
-                            <span className="flex items-center gap-1">
-                              <Music className="w-3 h-3" />
-                              {release.streams}
-                            </span>
-                          </div>
-                          <Button
-                            asChild
-                            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
-                          >
-                            <Link href={release.link} target="_blank" rel="noopener noreferrer">
-                              Listen on Amazon Music
-                              <ExternalLink className="w-4 h-4 ml-2" />
-                            </Link>
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {releases.length === 0 && (
-            <div className="text-center py-12">
-              <Music className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-400 text-lg">No releases found</p>
-              <p className="text-gray-500 text-sm">Check your API configurations</p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </section>
 

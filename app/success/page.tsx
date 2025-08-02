@@ -1,35 +1,27 @@
 "use client"
 
+import { CheckCircleIcon } from "lucide-react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle } from "lucide-react"
-import Link from "next/link"
-import { useSearchParams } from "next/navigation"
 
 export default function SuccessPage() {
-  const searchParams = useSearchParams()
-  const platform = searchParams.get("platform") || "integration"
-
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-md text-center">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-black to-gray-900 p-4">
+      <Card className="w-full max-w-md bg-gray-800 text-white border-gray-700">
         <CardHeader>
-          <CheckCircle className="mx-auto h-16 w-16 text-green-500" />
-          <CardTitle className="mt-4 text-2xl">Setup Complete!</CardTitle>
-          <CardDescription>Your {platform} integration has been successfully configured.</CardDescription>
+          <CardTitle className="text-3xl font-bold text-center text-green-400">Setup Complete!</CardTitle>
+          <CardDescription className="text-center text-gray-400">Your integrations are now set up.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4">
-          <p className="text-sm text-muted-foreground">
-            Remember to set your API keys and IDs as environment variables in Vercel for production deployments.
-          </p>
-          <Button asChild>
-            <Link href="/dashboard">Go to Dashboard</Link>
-          </Button>
-          {platform === "youtube" && (
-            <Button variant="outline" asChild>
-              <Link href="/dashboard">Finish Setup</Link>
+        <CardContent className="space-y-6 text-center">
+          <CheckCircleIcon className="h-20 w-20 text-green-500 mx-auto animate-bounce" />
+          <p className="text-lg text-gray-300">You&apos;re all set to explore your music release data.</p>
+          <Link href="/dashboard">
+            <Button size="lg" className="w-full bg-purple-600 hover:bg-purple-700">
+              Go to Dashboard
             </Button>
-          )}
+          </Link>
+          <p className="text-sm text-gray-500">Remember to deploy your changes to Vercel for live data.</p>
         </CardContent>
       </Card>
     </div>
