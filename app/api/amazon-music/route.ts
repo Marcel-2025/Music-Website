@@ -11,7 +11,7 @@ export async function GET() {
       platform: "Amazon Music",
       releaseDate: "2025-07-30", // Future date to show as "NEW"
       streams: "N/A",
-      image: "/placeholder.svg?height=300&width=300",
+      image: "/placeholder.png?height=300&width=300",
       link: "https://music.amazon.de/albums/B0F89B4G8H", // Generic Amazon Music album link for Ehhm.s
       type: "Single",
       totalTracks: 1,
@@ -23,7 +23,7 @@ export async function GET() {
       platform: "Amazon Music",
       releaseDate: "2025-06-15",
       streams: "N/A",
-      image: "/placeholder.svg?height=300&width=300",
+      image: "/placeholder.png?height=300&width=300",
       link: "https://music.amazon.de/albums/B0F89B4G8H",
       type: "Single",
       totalTracks: 1,
@@ -35,7 +35,7 @@ export async function GET() {
       platform: "Amazon Music",
       releaseDate: "2025-05-01",
       streams: "N/A",
-      image: "/placeholder.svg?height=300&width=300",
+      image: "/placeholder.png?height=300&width=300",
       link: "https://music.amazon.de/albums/B0F89B4G8H",
       type: "Single",
       totalTracks: 1,
@@ -47,7 +47,7 @@ export async function GET() {
       platform: "Amazon Music",
       releaseDate: "2025-04-20",
       streams: "N/A",
-      image: "/placeholder.svg?height=300&width=300",
+      image: "/placeholder.png?height=300&width=300",
       link: "https://music.amazon.de/albums/B0F89B4G8H",
       type: "Single",
       totalTracks: 1,
@@ -59,7 +59,7 @@ export async function GET() {
       platform: "Amazon Music",
       releaseDate: "2025-03-10",
       streams: "N/A",
-      image: "/placeholder.svg?height=300&width=300",
+      image: "/placeholder.png?height=300&width=300",
       link: "https://music.amazon.de/albums/B0F89B4G8H",
       type: "Single",
       totalTracks: 1,
@@ -71,7 +71,7 @@ export async function GET() {
       platform: "Amazon Music",
       releaseDate: "2025-02-05",
       streams: "N/A",
-      image: "/placeholder.svg?height=300&width=300",
+      image: "/placeholder.png?height=300&width=300",
       link: "https://music.amazon.de/albums/B0F89B4G8H",
       type: "Single",
       totalTracks: 1,
@@ -83,7 +83,7 @@ export async function GET() {
       platform: "Amazon Music",
       releaseDate: "2025-01-20",
       streams: "N/A",
-      image: "/placeholder.svg?height=300&width=300",
+      image: "/placeholder.png?height=300&width=300",
       link: "https://music.amazon.de/albums/B0F89B4G8H",
       type: "Single",
       totalTracks: 1,
@@ -95,7 +95,7 @@ export async function GET() {
       platform: "Amazon Music",
       releaseDate: "2024-12-01",
       streams: "N/A",
-      image: "/placeholder.svg?height=300&width=300",
+      image: "/placeholder.png?height=300&width=300",
       link: "https://music.amazon.de/albums/B0F89B4G8H",
       type: "Single",
       totalTracks: 1,
@@ -103,16 +103,23 @@ export async function GET() {
     },
   ]
 
+  const stats = {
+    platform: "Amazon Music",
+    followers: 15000,
+    monthlyListeners: 80000,
+  }
+
   return NextResponse.json({
     success: true,
     releases: mockReleases,
     artist: {
       name: "Ehhm.s",
       followers: 12345, // Mock followers for display
-      image: "/placeholder.svg?height=200&width=200",
+      image: "/placeholder.png?height=200&width=200",
       genres: ["Electronic", "Ambient", "Synthwave"],
       popularity: 75, // Mock popularity
     },
     connected: true, // Indicate connection for UI purposes
+    stats: stats,
   })
 }

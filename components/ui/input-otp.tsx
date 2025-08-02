@@ -31,7 +31,7 @@ const InputOTPSlot = React.forwardRef<
     ref={ref}
     index={index}
     className={cn(
-      "relative flex h-9 w-9 items-center justify-center border-y border-r border-input text-sm shadow-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md focus:z-10 group-data-[focused]:group-data-[filled]:bg-accent group-data-[focused]:group-data-[filled]:text-accent-foreground group-data-[focused]:group-data-[filled]:focus:outline-none group-data-[focused]:group-data-[filled]:focus:ring-2 group-data-[focused]:group-data-[filled]:focus:ring-ring group-data-[focused]:group-data-[filled]:focus:ring-offset-2",
+      "relative flex h-9 w-9 items-center justify-center border-y border-r border-input text-sm shadow-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md focus:relative focus:z-10 focus:outline-none focus:ring-1 focus:ring-ring data-[active=true]:bg-accent data-[active=true]:text-accent-foreground",
       className,
     )}
     {...props}
@@ -40,8 +40,8 @@ const InputOTPSlot = React.forwardRef<
 InputOTPSlot.displayName = "InputOTPSlot"
 
 const InputOTPSeparator = React.forwardRef<React.ElementRef<"div">, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("flex items-center justify-center", className)} {...props}>
+  ({ ...props }, ref) => (
+    <div ref={ref} role="separator" {...props}>
       <Minus />
     </div>
   ),

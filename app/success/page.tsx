@@ -1,20 +1,37 @@
-import Link from "next/link"
-import { CheckCircle } from "lucide-react"
+"use client"
+
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CheckCircle } from "lucide-react"
+import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 
 export default function SuccessPage() {
+  const searchParams = useSearchParams()
+  const platform = searchParams.get("platform") || "integration"
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
-      <div className="text-center p-8 bg-gray-800 rounded-lg shadow-lg max-w-md">
-        <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
-        <h1 className="text-4xl font-bold text-white mb-4">Setup Complete!</h1>
-        <p className="text-gray-300 mb-6">
-          Your music dashboard is now configured and ready to display your artist data.
-        </p>
-        <Button asChild className="bg-purple-600 hover:bg-purple-700 text-white text-lg px-8 py-3">
-          <Link href="/dashboard">Go to Dashboard</Link>
-        </Button>
-      </div>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-md text-center">
+        <CardHeader>
+          <CheckCircle className="mx-auto h-16 w-16 text-green-500" />
+          <CardTitle className="mt-4 text-2xl">Setup Complete!</CardTitle>
+          <CardDescription>Your {platform} integration has been successfully configured.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <p className="text-sm text-muted-foreground">
+            Remember to set your API keys and IDs as environment variables in Vercel for production deployments.
+          </p>
+          <Button asChild>
+            <Link href="/dashboard">Go to Dashboard</Link>
+          </Button>
+          {platform === "youtube" && (
+            <Button variant="outline" asChild>
+              <Link href="/dashboard">Finish Setup</Link>
+            </Button>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

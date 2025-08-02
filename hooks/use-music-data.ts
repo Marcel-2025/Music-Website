@@ -69,9 +69,14 @@ export function useMusicData(): MusicData {
     try {
       setLoading(true)
       const response = await fetch("/api/releases")
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to fetch releases: ${response.status} - ${errorText.substring(0, 200)}...`)
+      }
       const data = await response.json()
 
-      if (data.releases) {
+      if (data.success) {
+        // Check for success flag from /api/releases
         // Mark releases as new if they are recent (e.g., within the last 30 days)
         const updatedReleases = data.releases.map((release: Release) => ({
           ...release,
@@ -79,21 +84,13 @@ export function useMusicData(): MusicData {
         }))
         setReleases(updatedReleases || [])
         setPlatformStats(data.platformStats || {})
-
-        // Get artist data from Spotify if available
-        if (data.platformStats?.spotify?.connected) {
-          const spotifyResponse = await fetch("/api/spotify")
-          const spotifyData = await spotifyResponse.json()
-          if (spotifyData.success) {
-            setArtistData(spotifyData.artist)
-          }
-        }
-        setError(null)
+        setArtistData(data.artistData || null) // Get artistData directly from the aggregated response
+        setError(data.errors ? data.errors.join(", ") : null) // Display aggregated errors
       } else {
-        setError(data.error || "Failed to fetch release data")
+        setError(data.error || "Failed to fetch release data from API aggregator.")
       }
-    } catch (err) {
-      setError("Failed to connect to APIs")
+    } catch (err: any) {
+      setError(err.message || "Failed to connect to APIs")
       console.error("API fetch error:", err)
     } finally {
       setLoading(false)

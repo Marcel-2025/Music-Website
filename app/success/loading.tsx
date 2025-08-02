@@ -1,11 +1,14 @@
-import { Loader2 } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 
-export default function Loading() {
+export default function SuccessLoading() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
-      <div className="text-center">
-        <Loader2 className="w-8 h-8 animate-spin text-green-500 mx-auto mb-4" />
-        <p className="text-white text-xl">Loading success page...</p>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
+      <div className="w-full max-w-md space-y-6 rounded-lg border bg-background p-6 shadow-lg">
+        <div className="space-y-2 text-center">
+          <Skeleton className="mx-auto h-10 w-1/2" />
+          <Skeleton className="mx-auto h-4 w-3/4" />
+        </div>
+        <Skeleton className="h-10 w-full" />
       </div>
     </div>
   )

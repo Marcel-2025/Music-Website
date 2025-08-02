@@ -39,14 +39,14 @@ async function getSpotifyAccessToken() {
 }
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const query = searchParams.get("query")
-
-  if (!query) {
-    return NextResponse.json({ success: false, error: "Query parameter is required" }, { status: 400 })
-  }
-
   try {
+    const { searchParams } = new URL(request.url)
+    const query = searchParams.get("query")
+
+    if (!query) {
+      return NextResponse.json({ success: false, error: "Query parameter is required." }, { status: 400 })
+    }
+
     const accessToken = await getSpotifyAccessToken()
 
     const searchResponse = await fetch(
@@ -70,20 +70,20 @@ export async function GET(request: Request) {
       )
     }
 
-    const data = await searchResponse.json()
-    const artists = data.artists.items.map((artist: any) => ({
+    const searchData = await searchResponse.json()
+    const artists = searchData.artists.items.map((artist: any) => ({
       id: artist.id,
       name: artist.name,
       followers: artist.followers.total,
-      popularity: artist.popularity,
+      image: artist.images[0]?.url || "/placeholder.png",
       genres: artist.genres,
-      image: artist.images[0]?.url || null,
+      popularity: artist.popularity,
       spotifyUrl: artist.external_urls.spotify,
     }))
 
     return NextResponse.json({ success: true, artists })
   } catch (error: any) {
-    console.error("Spotify search API route error:", error)
+    console.error("Spotify search artist API route error:", error)
     return NextResponse.json({ success: false, error: error.message || "Internal server error" }, { status: 500 })
   }
 }

@@ -2,10 +2,7 @@
 
 import * as React from "react"
 import type * as RechartsPrimitive from "recharts"
-import {
-  ChartContainer as RechartsChartContainer,
-  type ChartContainerProps as RechartsChartContainerProps,
-} from "@/components/ui/chart"
+import { ChartContainer as RechartsChartContainer, type ChartContainerProps } from "@tremor/react"
 import { cn } from "@/lib/utils"
 import { ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 
@@ -40,9 +37,15 @@ function useChart() {
   return context
 }
 
-const ChartContainer = React.forwardRef<HTMLDivElement, RechartsChartContainerProps>(({ className, ...props }, ref) => (
-  <RechartsChartContainer ref={ref} className={cn("flex aspect-video w-full", className)} {...props} />
-))
+const ChartContainer = React.forwardRef<HTMLDivElement, ChartContainerProps & React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, children, ...props }, ref) => (
+    <div ref={ref} className={cn("flex aspect-video justify-center text-tremor-content-strong", className)} {...props}>
+      <RechartsChartContainer className="w-full" {...props}>
+        {children}
+      </RechartsChartContainer>
+    </div>
+  ),
+)
 ChartContainer.displayName = "ChartContainer"
 
 function ChartStyle({ id, config }: { id: string; config: ChartConfig }) {

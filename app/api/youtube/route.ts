@@ -62,7 +62,7 @@ export async function GET() {
       platform: "YouTube",
       releaseDate: video.snippet.publishedAt,
       streams: "N/A", // YouTube search API doesn't provide view counts directly, would need separate video details call
-      image: video.snippet.thumbnails.high?.url || "/placeholder.svg",
+      image: video.snippet.thumbnails.high?.url || "/placeholder.png",
       link: `https://www.youtube.com/watch?v=${video.id.videoId}`,
       type: "Video",
       artists: video.snippet.channelTitle,
@@ -76,7 +76,7 @@ export async function GET() {
         subscribers: Number.parseInt(channel.statistics.subscriberCount),
         videoCount: Number.parseInt(channel.statistics.videoCount),
         viewCount: Number.parseInt(channel.statistics.viewCount),
-        image: channel.snippet.thumbnails.high?.url || "/placeholder.svg",
+        image: channel.snippet.thumbnails.high?.url || "/placeholder.png",
         youtubeUrl: `https://www.youtube.com/channel/${channel.id}`,
       },
       releases: releases,

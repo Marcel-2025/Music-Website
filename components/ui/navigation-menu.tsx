@@ -37,7 +37,7 @@ NavigationMenuList.displayName = NavigationMenuPrimitive.List.displayName
 const NavigationMenuItem = NavigationMenuPrimitive.Item
 
 const navigationMenuTriggerStyle = cva(
-  "group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50",
+  "group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50",
 )
 
 const NavigationMenuTrigger = React.forwardRef<
@@ -65,8 +65,8 @@ const NavigationMenuContent = React.forwardRef<
   <NavigationMenuPrimitive.Content
     ref={ref}
     className={cn(
-      "left-0 top-0 w-full data-[animate-in]:fade-in data-[animate-out]:fade-out data-[animate-in]:slide-in-from-top-5 data-[animate-out]:slide-out-to-top-5 md:absolute md:w-auto ",
-      "ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+      "left-0 top-0 w-full data-[animate-in]:fade-in data-[animate-out]:fade-out data-[animate-in]:slide-in-from-top-1 data-[animate-out]:slide-out-to-top-1 md:absolute md:w-auto md:data-[animate-in]:zoom-in-90 md:data-[animate-out]:zoom-out-90 md:data-[animate-in]:slide-in-from-top-2 md:data-[animate-out]:slide-out-to-top-2",
+      "absolute h-auto w-full justify-center rounded-md border bg-popover p-4 text-popover-foreground shadow-lg",
       className,
     )}
     {...props}
@@ -83,8 +83,7 @@ const NavigationMenuViewport = React.forwardRef<
   <div className={cn("absolute left-0 top-full flex justify-center")}>
     <NavigationMenuPrimitive.Viewport
       className={cn(
-        "relative origin-top-center overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-lg",
-        "h-[var(--radix-navigation-menu-viewport-height)] w-full data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 md:w-[var(--radix-navigation-menu-viewport-width)]",
+        "relative h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-90 md:w-[var(--radix-navigation-menu-viewport-width)]",
         className,
       )}
       ref={ref}

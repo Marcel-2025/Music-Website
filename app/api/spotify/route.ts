@@ -96,7 +96,7 @@ export async function GET() {
       platform: "Spotify",
       releaseDate: album.release_date,
       streams: "N/A", // Spotify API doesn't provide total streams for albums/singles directly
-      image: album.images[0]?.url || "/placeholder.svg",
+      image: album.images[0]?.url || "/placeholder.png",
       link: album.external_urls.spotify,
       type: album.album_type.charAt(0).toUpperCase() + album.album_type.slice(1), // Album, Single, EP
       artists: album.artists.map((artist: any) => artist.name).join(", "),
@@ -108,7 +108,7 @@ export async function GET() {
         id: artistData.id,
         name: artistData.name,
         followers: artistData.followers.total,
-        image: artistData.images[0]?.url || "/placeholder.svg",
+        image: artistData.images[0]?.url || "/placeholder.png",
         genres: artistData.genres,
         popularity: artistData.popularity,
         spotifyUrl: artistData.external_urls.spotify,

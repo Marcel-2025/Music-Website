@@ -12,81 +12,106 @@ export async function GET() {
     const allReleases: any[] = []
     const platformStats: any = {}
     const errors: string[] = []
+    let spotifyArtistData: any = null // To store Spotify artist data
 
-    // Process Spotify data
-    if (spotifyRes.status === "fulfilled" && spotifyRes.value.ok) {
-      const spotifyData = await spotifyRes.value.json()
-      if (spotifyData.success) {
-        allReleases.push(...(spotifyData.releases || []))
-        platformStats.spotify = {
-          followers: spotifyData.artist?.followers || 0,
-          name: spotifyData.artist?.name || "Spotify Artist",
-          connected: true,
+    // Helper to safely parse JSON or get error text
+    async function parseResponse(response: Response, platformName: string) {
+      if (response.ok) {
+        try {
+          const data = await response.json()
+          return { success: true, data }
+        } catch (jsonError) {
+          const errorText = await response.text()
+          return {
+            success: false,
+            error: `${platformName}: Failed to parse JSON response. Body: ${errorText.substring(0, 200)}...`,
+          }
         }
       } else {
-        errors.push(`Spotify: ${spotifyData.error || "Unknown error"}`)
+        const errorText = await response.text()
+        return {
+          success: false,
+          error: `${platformName}: Failed to fetch data. Status: ${response.status}, Body: ${errorText.substring(0, 200)}...`,
+        }
+      }
+    }
+
+    // Process Spotify data
+    if (spotifyRes.status === "fulfilled") {
+      const result = await parseResponse(spotifyRes.value, "Spotify")
+      if (result.success) {
+        allReleases.push(...(result.data.releases || []))
+        platformStats.spotify = {
+          followers: result.data.artist?.followers || 0,
+          name: result.data.artist?.name || "Spotify Artist",
+          connected: true,
+        }
+        spotifyArtistData = result.data.artist // Store artist data
+      } else {
+        errors.push(result.error)
         platformStats.spotify = { connected: false }
       }
     } else {
-      errors.push(`Spotify: Failed to fetch data. Status: ${spotifyRes.status}`)
+      // spotifyRes.status === "rejected"
+      errors.push(`Spotify: Fetch failed due to network error or unhandled exception: ${spotifyRes.reason}`)
       platformStats.spotify = { connected: false }
     }
 
     // Process YouTube data
-    if (youtubeRes.status === "fulfilled" && youtubeRes.value.ok) {
-      const youtubeData = await youtubeRes.value.json()
-      if (youtubeData.success) {
-        allReleases.push(...(youtubeData.releases || []))
+    if (youtubeRes.status === "fulfilled") {
+      const result = await parseResponse(youtubeRes.value, "YouTube")
+      if (result.success) {
+        allReleases.push(...(result.data.releases || []))
         platformStats.youtube = {
-          subscribers: youtubeData.channel?.subscribers || 0,
-          videoCount: youtubeData.channel?.videoCount || 0,
-          name: youtubeData.channel?.name || "YouTube Channel",
+          subscribers: result.data.channel?.subscribers || 0,
+          videoCount: result.data.channel?.videoCount || 0,
+          name: result.data.channel?.name || "YouTube Channel",
           connected: true,
         }
       } else {
-        errors.push(`YouTube: ${youtubeData.error || "Unknown error"}`)
+        errors.push(result.error)
         platformStats.youtube = { connected: false }
       }
     } else {
-      errors.push(`YouTube: Failed to fetch data. Status: ${youtubeRes.status}`)
+      errors.push(`YouTube: Fetch failed due to network error or unhandled exception: ${youtubeRes.reason}`)
       platformStats.youtube = { connected: false }
     }
 
     // Process Apple Music data
-    if (appleMusicRes.status === "fulfilled" && appleMusicRes.value.ok) {
-      const appleMusicData = await appleMusicRes.value.json()
-      if (appleMusicData.success) {
-        allReleases.push(...(appleMusicData.releases || []))
+    if (appleMusicRes.status === "fulfilled") {
+      const result = await parseResponse(appleMusicRes.value, "Apple Music")
+      if (result.success) {
+        allReleases.push(...(result.data.releases || []))
         platformStats.appleMusic = {
-          followers: appleMusicData.artist?.followers || 0,
-          name: appleMusicData.artist?.name || "Apple Music Artist",
+          followers: result.data.artist?.followers || 0,
+          name: result.data.artist?.name || "Apple Music Artist",
           connected: true,
         }
       } else {
-        errors.push(`Apple Music: ${appleMusicData.error || "Unknown error"}`)
+        errors.push(result.error)
         platformStats.appleMusic = { connected: false }
       }
     } else {
-      errors.push(`Apple Music: Failed to fetch data. Status: ${appleMusicRes.status}`)
+      errors.push(`Apple Music: Fetch failed due to network error or unhandled exception: ${appleMusicRes.reason}`)
       platformStats.appleMusic = { connected: false }
     }
 
     // Process Amazon Music data
-    if (amazonMusicRes.status === "fulfilled" && amazonMusicRes.value.ok) {
-      const amazonMusicData = await amazonMusicRes.value.json()
-      if (amazonMusicData.success) {
-        allReleases.push(...(amazonMusicData.releases || []))
+    if (amazonMusicRes.status === "fulfilled") {
+      const result = await parseResponse(amazonMusicRes.value, "Amazon Music")
+      if (result.success) {
+        allReleases.push(...(result.data.releases || []))
         platformStats.amazonMusic = {
-          followers: amazonMusicData.artist?.followers || 0,
-          name: amazonMusicData.artist?.name || "Amazon Music Artist",
+          followers: result.data.artist?.followers || 0,
+          name: result.data.artist?.name || "Amazon Music Artist",
           connected: true,
         }
       } else {
-        errors.push(`Amazon Music: ${amazonMusicData.error || "Unknown error"}`)
+        errors.push(result.error)
         platformStats.amazonMusic = { connected: false }
       }
     } else {
-      errors.push(`Amazon Music: Failed to fetch data. Status: ${amazonMusicRes.status}`)
+      errors.push(`Amazon Music: Fetch failed due to network error or unhandled exception: ${amazonMusicRes.reason}`)
       platformStats.amazonMusic = { connected: false }
     }
 
@@ -97,6 +122,7 @@ export async function GET() {
       success: true,
       releases: allReleases,
       platformStats,
+      artistData: spotifyArtistData, // Include Spotify artist data here
       totalReleases: allReleases.length,
       errors: errors.length > 0 ? errors : null,
     })
