@@ -3,164 +3,118 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, AirplayIcon as Spotify } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
+import { useQuery } from "@tanstack/react-query"
 import Image from "next/image"
-import { toast } from "sonner"
-import Link from "next/link"
-
-interface ArtistData {
-  name: string
-  followers: number
-  image: string
-  genres: string[]
-  popularity: number
-  spotifyUrl: string
-}
 
 interface Release {
   id: string
   title: string
-  platform: string
-  releaseDate: string
-  streams: string
-  image: string
-  link: string
-  type: string
-  totalTracks?: number
-  artists?: string
+  artist: string
+  releaseDate?: string
+  imageUrl: string
+  platform: "spotify"
+  url: string
 }
 
-export default function TestSpotifyPage() {
-  const [loading, setLoading] = useState(false)
-  const [artistData, setArtistData] = useState<ArtistData | null>(null)
-  const [releases, setReleases] = useState<Release[]>([])
-  const [error, setError] = useState<string | null>(null)
+interface SpotifyApiResponse {
+  releases: Release[]
+}
+
+export default function TestSpotify() {
+  const { toast } = useToast()
+  const [testResult, setTestResult] = useState<string | null>(null)
+
+  const { data, isLoading, error, refetch } = useQuery<SpotifyApiResponse, Error>({
+    queryKey: ["testSpotify"],
+    queryFn: async () => {
+      const response = await fetch("/api/spotify")
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to fetch Spotify data")
+      }
+      return response.json()
+    },
+    enabled: false, // Only run when manually triggered
+  })
 
   const handleTestConnection = async () => {
-    setLoading(true)
-    setArtistData(null)
-    setReleases([])
-    setError(null)
-
+    setTestResult(null)
     try {
-      const response = await fetch("/api/spotify")
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to fetch Spotify data.")
-      }
-
-      if (data.success) {
-        setArtistData(data.artistData)
-        setReleases(data.releases)
-        toast.success("Spotify connection successful!")
+      const { data: fetchedData } = await refetch()
+      if (fetchedData && fetchedData.releases.length > 0) {
+        setTestResult("success")
+        toast({
+          title: "Spotify Connection Successful!",
+          description: `Found ${fetchedData.releases.length} releases.`,
+          variant: "default",
+        })
       } else {
-        setError(data.message || "Failed to fetch Spotify data.")
-        toast.error(data.message || "Failed to fetch Spotify data.")
+        setTestResult("no_releases")
+        toast({
+          title: "Spotify Connected, but No Releases Found",
+          description: "The API connection was successful, but no releases were returned for the configured artist ID.",
+          variant: "default",
+        })
       }
     } catch (err: any) {
-      setError(err.message || "An unexpected error occurred.")
-      toast.error(`Connection failed: ${err.message}`)
-      console.error("Spotify test error:", err)
-    } finally {
-      setLoading(false)
+      setTestResult("failure")
+      toast({
+        title: "Spotify Connection Failed!",
+        description: err.message || "Please check your API credentials and artist ID in the setup.",
+        variant: "destructive",
+      })
     }
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4 dark:bg-gray-950">
-      <Card className="w-full max-w-2xl">
-        <CardHeader className="text-center">
-          <Spotify className="mx-auto h-12 w-12 text-green-500" />
-          <CardTitle className="mt-4 text-2xl">Test Spotify Connection</CardTitle>
-          <CardDescription>Verify your Spotify API keys and artist ID are correctly configured.</CardDescription>
+    <div className="flex flex-col gap-4 p-4 md:p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Test Spotify Connection</CardTitle>
+          <CardDescription>Verify your Spotify API credentials and artist ID.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <Button onClick={handleTestConnection} className="w-full" disabled={loading}>
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Test Connection"}
+        <CardContent className="space-y-4">
+          <Button onClick={handleTestConnection} disabled={isLoading}>
+            {isLoading ? "Testing..." : "Test Connection"}
           </Button>
 
-          {error && (
-            <div className="text-center text-red-500">
-              <p className="font-semibold">Error:</p>
-              <p>{error}</p>
-              <p className="mt-2 text-sm text-gray-500">
-                Please ensure your `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, and `SPOTIFY_ARTIST_ID` environment
-                variables are correctly set in Vercel.
-              </p>
-              <Link href="/setup" className="text-blue-500 hover:underline text-sm mt-2 inline-block">
-                Go to Spotify Setup
-              </Link>
-            </div>
-          )}
-
-          {artistData && (
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold">Artist Data:</h3>
-              <div className="flex items-center space-x-4">
-                <Image
-                  src={artistData.image || "/placeholder-user.png"}
-                  alt={artistData.name}
-                  width={80}
-                  height={80}
-                  className="rounded-full"
-                />
-                <div>
-                  <p className="text-lg font-medium">{artistData.name}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Followers: {artistData.followers.toLocaleString()}
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Popularity: {artistData.popularity}/100</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Genres: {artistData.genres.join(", ")}</p>
-                  <Link
-                    href={artistData.spotifyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:underline text-sm"
-                  >
-                    View on Spotify
-                  </Link>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {releases.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold">Latest Releases:</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {releases.slice(0, 4).map((release) => (
+          {testResult === "success" && data && (
+            <div className="mt-4 space-y-4">
+              <p className="text-green-600 font-semibold">Connection successful! Here are some recent releases:</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {data.releases.slice(0, 4).map((release) => (
                   <Card key={release.id}>
-                    <CardContent className="flex items-center space-x-4 p-4">
+                    <CardContent className="p-4 flex flex-col items-center text-center">
                       <Image
-                        src={release.image || "/placeholder.png?height=64&width=64&query=album cover"}
                         alt={release.title}
-                        width={64}
-                        height={64}
-                        className="rounded-md"
+                        className="rounded-md object-cover mb-2"
+                        height={120}
+                        src={release.imageUrl || "/placeholder.svg"}
+                        style={{ aspectRatio: "1/1", objectFit: "cover" }}
+                        width={120}
                       />
-                      <div>
-                        <p className="font-medium">{release.title}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {release.type} by {release.artists}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-500">
-                          {new Date(release.releaseDate).toLocaleDateString()}
-                        </p>
-                        <Link
-                          href={release.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-500 hover:underline text-sm"
-                        >
-                          Listen
-                        </Link>
-                      </div>
+                      <h4 className="font-semibold text-sm line-clamp-2">{release.title}</h4>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{release.artist}</p>
                     </CardContent>
                   </Card>
                 ))}
               </div>
             </div>
+          )}
+
+          {testResult === "no_releases" && (
+            <p className="text-yellow-600 font-semibold">
+              Connection successful, but no releases found for the configured artist ID. Please double-check the artist
+              ID.
+            </p>
+          )}
+
+          {testResult === "failure" && error && (
+            <p className="text-red-600 font-semibold">
+              Connection failed: {error.message}. Please check your Spotify Client ID, Client Secret, and Artist ID in
+              the setup page.
+            </p>
           )}
         </CardContent>
       </Card>

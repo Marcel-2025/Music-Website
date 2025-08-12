@@ -1,17 +1,21 @@
 import { Skeleton } from "@/components/ui/skeleton"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function SuccessLoading() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4 dark:bg-gray-950">
-      <div className="w-full max-w-md space-y-6 rounded-lg bg-white p-8 shadow-lg dark:bg-gray-900">
-        <div className="text-center">
-          <Skeleton className="mx-auto h-12 w-12 rounded-full" />
-          <Skeleton className="mt-4 h-6 w-48 mx-auto" />
-          <Skeleton className="mt-2 h-4 w-64 mx-auto" />
-        </div>
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-10 w-full" />
-      </div>
+    <div className="flex flex-col gap-4 p-4 md:p-6">
+      <Card className="w-full max-w-md mx-auto text-center">
+        <CardHeader>
+          <CardTitle>
+            <Skeleton className="h-8 w-64 mx-auto" />
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4 mx-auto" />
+          <Skeleton className="h-10 w-32 mx-auto" />
+        </CardContent>
+      </Card>
     </div>
   )
 }

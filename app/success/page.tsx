@@ -1,35 +1,24 @@
-"use client"
-
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle2 } from "lucide-react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { CheckCircleIcon } from "lucide-react"
 
 export default function SuccessPage() {
-  const searchParams = useSearchParams()
-  const platform = searchParams.get("platform") || "platform"
-
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4 dark:bg-gray-950">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CheckCircle2 className="mx-auto h-12 w-12 text-green-500" />
-          <CardTitle className="mt-4 text-2xl">Integration Successful!</CardTitle>
-          <CardDescription>Your {platform} integration has been successfully configured.</CardDescription>
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md text-center">
+        <CardHeader>
+          <CheckCircleIcon className="mx-auto h-16 w-16 text-green-500" />
+          <CardTitle className="mt-4 text-2xl font-bold">Setup Complete!</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-center text-gray-600 dark:text-gray-400">
-            You can now view your music releases and statistics on the dashboard.
+          <p className="text-muted-foreground">
+            You have successfully configured your integrations. You can now go to the dashboard to see your music
+            releases.
           </p>
-          <div className="flex flex-col gap-2">
-            <Button asChild className="w-full">
-              <Link href="/dashboard">Go to Dashboard</Link>
-            </Button>
-            <Button asChild variant="outline" className="w-full bg-transparent">
-              <Link href="/">Back to Home</Link>
-            </Button>
-          </div>
+          <Link href="/dashboard">
+            <Button size="lg">Go to Dashboard</Button>
+          </Link>
         </CardContent>
       </Card>
     </div>

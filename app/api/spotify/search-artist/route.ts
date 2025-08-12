@@ -16,8 +16,10 @@ async function getSpotifyAccessToken() {
 
   if (!response.ok) {
     const errorText = await response.text()
-    throw new Error(`Failed to get Spotify access token: ${response.status} - ${errorText}`)
+    console.error("Failed to get Spotify access token:", response.status, errorText)
+    throw new Error(`Failed to get Spotify access token: ${response.statusText}`)
   }
+
   const data = await response.json()
   return data.access_token
 }
@@ -27,17 +29,17 @@ export async function GET(request: Request) {
   const query = searchParams.get("query")
 
   if (!query) {
-    return NextResponse.json({ success: false, message: "Query parameter is required." }, { status: 400 })
+    return NextResponse.json({ error: "Query parameter is required" }, { status: 400 })
   }
 
   if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
-    return NextResponse.json({ success: false, message: "Spotify API keys are not configured." }, { status: 400 })
+    return NextResponse.json({ error: "Spotify API credentials not set" }, { status: 400 })
   }
 
   try {
     const accessToken = await getSpotifyAccessToken()
-    const searchResponse = await fetch(
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&limit=10`,
+    const response = await fetch(
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&limit=5`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -45,27 +47,22 @@ export async function GET(request: Request) {
       },
     )
 
-    if (!searchResponse.ok) {
-      const errorText = await searchResponse.text()
-      throw new Error(`Spotify search API error: ${searchResponse.status} - ${errorText}`)
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error("Spotify search API request failed:", response.status, errorText)
+      throw new Error(`Spotify search API request failed: ${response.statusText}`)
     }
 
-    const searchData = await searchResponse.json()
-    const artists = searchData.artists.items.map((artist: any) => ({
+    const data = await response.json()
+    const artists = data.artists.items.map((artist: any) => ({
       id: artist.id,
       name: artist.name,
-      genres: artist.genres,
-      followers: artist.followers.total,
-      popularity: artist.popularity,
-      image: artist.images[0]?.url || null,
+      imageUrl: artist.images[0]?.url || "/placeholder.svg",
     }))
 
-    return NextResponse.json({ success: true, artists })
-  } catch (error: any) {
-    console.error("Spotify search artist error:", error)
-    return NextResponse.json(
-      { success: false, message: error.message || "Failed to search Spotify artists." },
-      { status: 500 },
-    )
+    return NextResponse.json({ artists })
+  } catch (error) {
+    console.error("Error searching Spotify artists:", error)
+    return NextResponse.json({ error: "Failed to search Spotify artists" }, { status: 500 })
   }
 }

@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server"
+import { BASE_URL } from "@/config" // Assuming BASE_URL is defined in a config file
 
 // Helper function to fetch data and handle errors
 async function fetchData(path: string) {
   try {
-    // Use relative path directly for internal API calls.
-    // Next.js and Vercel will handle the base URL correctly in production.
-    const response = await fetch(path, {
+    const response = await fetch(`${BASE_URL}${path}`, {
       headers: {
         "Content-Type": "application/json",
       },
@@ -27,7 +26,6 @@ async function fetchData(path: string) {
 }
 
 export async function GET() {
-  // Use relative paths for internal API calls
   const spotifyPromise = fetchData("/api/spotify")
   const youtubePromise = fetchData("/api/youtube")
   const appleMusicPromise = fetchData("/api/apple-music")
@@ -100,7 +98,9 @@ export async function GET() {
   }
 
   // Sort releases by releaseDate in descending order
-  allReleases.sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime())
+  allReleases.sort(
+    (a, b) => new Date(b.releaseDate || b.publishedAt).getTime() - new Date(a.releaseDate || a.publishedAt).getTime(),
+  )
 
   if (errors.length > 0 && allReleases.length === 0) {
     return NextResponse.json(

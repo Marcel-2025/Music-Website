@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server"
 
 export async function GET() {
-  const spotifyConnected =
-    !!process.env.SPOTIFY_CLIENT_ID && !!process.env.SPOTIFY_CLIENT_SECRET && !!process.env.SPOTIFY_ARTIST_ID
+  const setupStatus = {
+    spotify: !!(process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_CLIENT_SECRET && process.env.SPOTIFY_ARTIST_ID),
+    youtube: !!(process.env.YOUTUBE_API_KEY && process.env.YOUTUBE_CHANNEL_ID),
+    amazonMusic: false, // Not implemented yet
+    appleMusic: false, // Not implemented yet
+  }
 
-  const youtubeConnected = !!process.env.YOUTUBE_API_KEY && !!process.env.YOUTUBE_CHANNEL_ID
-
-  return NextResponse.json({
-    spotify: spotifyConnected,
-    youtube: youtubeConnected,
-  })
+  return NextResponse.json(setupStatus)
 }

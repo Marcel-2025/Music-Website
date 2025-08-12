@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import type { ToastAction } from "@/components/ui/toast"
 
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast"
 
@@ -134,49 +135,73 @@ function dispatch(action: Action) {
   setState(action)
 }
 
-export function useToast() {
-  const [toasts, setToasts] = React.useState(state.toasts)
-
-  React.useEffect(() => {
-    const listener = (newState: State) => {
-      setToasts(newState.toasts)
-    }
-
-    listeners.push(listener)
-    return () => {
-      const index = listeners.indexOf(listener)
-      if (index > -1) {
-        listeners.splice(index, 1)
-      }
-    }
-  }, [])
-
+export function toast({
+  title,
+  description,
+  action,
+  duration = 5000,
+  variant = "default",
+}: {
+  title: string
+  description?: string
+  action?: React.ReactElement<typeof ToastAction>
+  duration?: number
+  variant?: "default" | "destructive"
+}) {
+  const id = genId()
+  const update = (props: ToasterToast) =>
+    dispatch({
+      type: actionTypes.UPDATE_TOAST,
+      toast: { ...props, id },
+    })
+  const dismiss = () => dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id })
+  dispatch({
+    type: actionTypes.ADD_TOAST,
+    toast: {
+      title,
+      description,
+      action,
+      duration,
+      variant,
+      id,
+      open: true,
+      onOpenChange: (open) => {
+        if (!open) dismiss()
+      },
+    },
+  })
   return {
-    toasts,
-    toast: React.useCallback((props: ToasterToast) => {
-      const id = genId()
-      const update = (props: ToasterToast) =>
-        dispatch({
-          type: actionTypes.UPDATE_TOAST,
-          toast: { ...props, id },
-        })
-      const dismiss = () => dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id })
-      dispatch({
-        type: actionTypes.ADD_TOAST,
-        toast: {
-          ...props,
-          id,
-          open: true,
-          onOpenChange: (open) => {
-            if (!open) dismiss()
-          },
-        },
-      })
-      return {
-        id: id,
-        dismiss,
-        update,
-      }
-    }, []),
+    id: id,
+    dismiss,
+    update,
   }
+}
+
+export function useToast() {
+  const showToast = React.useCallback(
+    ({
+      title,
+      description,
+      action,
+      duration = 5000,
+      variant = "default",
+    }: {
+      title: string
+      description?: string
+      action?: React.ReactElement<typeof ToastAction>
+      duration?: number
+      variant?: "default" | "destructive"
+    }) => {
+      toast({
+        title,
+        description,
+        action,
+        duration,
+        variant,
+      })
+    },
+    [],
+  )
+
+  return { toast: showToast }
 }

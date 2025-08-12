@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
+  swcMinify: true,
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -10,27 +12,23 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'i.scdn.co', // Spotify images
+        hostname: 'i.scdn.co',
       },
       {
         protocol: 'https',
-        hostname: 'i.ytimg.com', // YouTube images
+        hostname: 'i.ytimg.com',
       },
       {
         protocol: 'https',
-        hostname: 'is1-ssl.mzstatic.com', // Apple Music images
+        hostname: 'yt3.ggpht.com',
       },
       {
         protocol: 'https',
-        hostname: 'm.media-amazon.com', // Amazon Music images
+        hostname: 'is1-ssl.mzstatic.com',
       },
       {
         protocol: 'https',
-        hostname: 'via.placeholder.com', // Placeholder images
-      },
-      {
-        protocol: 'https',
-        hostname: 'blob.v0.dev', // v0 generated images
+        hostname: 'm.media-amazon.com',
       },
     ],
     unoptimized: true,
