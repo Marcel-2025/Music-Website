@@ -3,12 +3,13 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/sonner"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Ehhm.s Music Release Dashboard",
-  description: "A dashboard to track music releases and artist stats across platforms.",
+  title: "Ehhm.s Music App",
+  description: "Track your music releases and artist stats across platforms.",
     generator: 'v0.app'
 }
 
@@ -22,6 +23,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

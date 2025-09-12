@@ -3,20 +3,8 @@ import { NextResponse } from "next/server"
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET
 
-let spotifyAccessToken: string | null = null
-let tokenExpiryTime = 0
-
 async function getSpotifyAccessToken() {
-  if (spotifyAccessToken && Date.now() < tokenExpiryTime) {
-    return spotifyAccessToken
-  }
-
-  if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
-    throw new Error("Spotify API credentials are not set.")
-  }
-
   const authString = Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString("base64")
-
   const response = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
     headers: {
@@ -27,15 +15,11 @@ async function getSpotifyAccessToken() {
   })
 
   if (!response.ok) {
-    const errorData = await response.json()
-    console.error("Spotify token error:", errorData)
-    throw new Error(`Failed to get Spotify access token: ${errorData.error_description || response.statusText}`)
+    const errorText = await response.text()
+    throw new Error(`Failed to get Spotify access token: ${response.status} - ${errorText}`)
   }
-
   const data = await response.json()
-  spotifyAccessToken = data.access_token
-  tokenExpiryTime = Date.now() + data.expires_in * 1000 - 60000 // Refresh 1 minute before expiry
-  return spotifyAccessToken
+  return data.access_token
 }
 
 export async function GET(request: Request) {
@@ -43,12 +27,15 @@ export async function GET(request: Request) {
   const query = searchParams.get("query")
 
   if (!query) {
-    return NextResponse.json({ success: false, error: "Query parameter is required" }, { status: 400 })
+    return NextResponse.json({ success: false, message: "Query parameter is required." }, { status: 400 })
+  }
+
+  if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
+    return NextResponse.json({ success: false, message: "Spotify API keys are not configured." }, { status: 400 })
   }
 
   try {
     const accessToken = await getSpotifyAccessToken()
-
     const searchResponse = await fetch(
       `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&limit=10`,
       {
@@ -59,31 +46,26 @@ export async function GET(request: Request) {
     )
 
     if (!searchResponse.ok) {
-      const errorData = await searchResponse.json()
-      console.error("Spotify search API error:", errorData)
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Failed to search Spotify artists: ${errorData.error?.message || searchResponse.statusText}`,
-        },
-        { status: searchResponse.status },
-      )
+      const errorText = await searchResponse.text()
+      throw new Error(`Spotify search API error: ${searchResponse.status} - ${errorText}`)
     }
 
-    const data = await searchResponse.json()
-    const artists = data.artists.items.map((artist: any) => ({
+    const searchData = await searchResponse.json()
+    const artists = searchData.artists.items.map((artist: any) => ({
       id: artist.id,
       name: artist.name,
+      genres: artist.genres,
       followers: artist.followers.total,
       popularity: artist.popularity,
-      genres: artist.genres,
       image: artist.images[0]?.url || null,
-      spotifyUrl: artist.external_urls.spotify,
     }))
 
     return NextResponse.json({ success: true, artists })
   } catch (error: any) {
-    console.error("Spotify search API route error:", error)
-    return NextResponse.json({ success: false, error: error.message || "Internal server error" }, { status: 500 })
+    console.error("Spotify search artist error:", error)
+    return NextResponse.json(
+      { success: false, message: error.message || "Failed to search Spotify artists." },
+      { status: 500 },
+    )
   }
 }

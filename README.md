@@ -1,106 +1,66 @@
-# Music Release Web App
+# Ehhm.s Music Website
 
-A modern web application for tracking music releases across multiple platforms including Spotify, YouTube, Apple Music, and Amazon Music.
-
-## Features
-
-- **Multi-Platform Integration**: Connect with Spotify, YouTube, Apple Music, and Amazon Music APIs
-- **Release Tracking**: Monitor new releases from your favorite artists
-- **Dashboard**: Clean, modern interface to view all your music data
-- **Real-time Updates**: Get the latest information about new releases
-- **Responsive Design**: Works seamlessly on desktop and mobile devices
-
-## Tech Stack
-
-- **Framework**: Next.js 14 with App Router
-- **Styling**: Tailwind CSS with shadcn/ui components
-- **Language**: TypeScript
-- **APIs**: Spotify Web API, YouTube Data API, Apple Music API, Amazon Music API
-- **Authentication**: JWT tokens for secure API access
+This is a Next.js application to track and display music releases and artist statistics from various platforms like Spotify, YouTube, Apple Music, and Amazon Music.
 
 ## Getting Started
 
-### Prerequisites
+1.  **Clone the repository:**
+    \`\`\`bash
+    git clone <repository-url>
+    cd ehhms-music-app
+    \`\`\`
+2.  **Install dependencies:**
+    \`\`\`bash
+    pnpm install
+    \`\`\`
+3.  **Set up environment variables:**
+    Create a `.env.local` file in the root of your project and add your API keys and IDs:
+    \`\`\`
+    SPOTIFY_CLIENT_ID=your_spotify_client_id
+    SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+    SPOTIFY_ARTIST_ID=your_spotify_artist_id
+    YOUTUBE_API_KEY=your_youtube_api_key
+    YOUTUBE_CHANNEL_ID=your_youtube_channel_id
+    NEXT_PUBLIC_BASE_URL=http://localhost:3000 # For local development, use your deployed URL for production
+    \`\`\`
+    **Important for Vercel Deployment:** Ensure `NEXT_PUBLIC_BASE_URL` is set to your actual Vercel deployment URL in your Vercel project settings (Environment Variables). For example, `https://your-app-name.vercel.app`.
 
-- Node.js 18+ 
-- pnpm (recommended) or npm
-- API credentials for:
-  - Spotify (Client ID, Client Secret)
-  - YouTube (API Key)
-  - Apple Music (optional)
-  - Amazon Music (optional)
-
-### Installation
-
-1. Clone the repository:
-\`\`\`bash
-git clone <repository-url>
-cd music-release-web-app
-\`\`\`
-
-2. Install dependencies:
-\`\`\`bash
-pnpm install
-\`\`\`
-
-3. Set up environment variables:
-Create a `.env.local` file in the root directory and add your API credentials:
-
-\`\`\`env
-SPOTIFY_CLIENT_ID=your_spotify_client_id
-SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-SPOTIFY_ARTIST_ID=your_spotify_artist_id
-YOUTUBE_API_KEY=your_youtube_api_key
-YOUTUBE_CHANNEL_ID=your_youtube_channel_id
-NEXT_PUBLIC_BASE_URL=http://localhost:3000
-\`\`\`
-
-4. Run the development server:
-\`\`\`bash
-pnpm dev
-\`\`\`
-
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+4.  **Run the development server:**
+    \`\`\`bash
+    pnpm dev
+    \`\`\`
+    Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 ## Project Structure
 
-\`\`\`
-├── app/                    # Next.js App Router pages
-│   ├── api/               # API routes
-│   ├── dashboard/         # Dashboard page
-│   ├── setup/            # Setup pages
-│   └── globals.css       # Global styles
-├── components/           # React components
-│   └── ui/              # shadcn/ui components
-├── hooks/               # Custom React hooks
-├── lib/                # Utility functions
-└── public/             # Static assets
-\`\`\`
+-   `app/`: Contains Next.js App Router pages and API routes.
+    -   `api/`: Backend API routes for fetching data from music platforms.
+    -   `dashboard/`: Dashboard page.
+    -   `setup/`: Pages for setting up API integrations.
+    -   `success/`: Success page after setup.
+    -   `page.tsx`: The main landing page displaying releases.
+    -   `layout.tsx`: Root layout for the application.
+-   `components/ui/`: Shadcn UI components.
+-   `hooks/`: Custom React hooks, e.g., `use-music-data.ts` for data fetching, `use-mobile.ts` for mobile detection.
+-   `lib/utils.ts`: Utility functions like `cn` for Tailwind CSS class merging.
+-   `public/`: Static assets like images.
 
-## API Routes
+## Features
 
-- `/api/spotify` - Spotify integration
-- `/api/youtube` - YouTube integration  
-- `/api/apple-music` - Apple Music integration
-- `/api/amazon-music` - Amazon Music integration
-- `/api/releases` - Combined release data
+-   **Music Release Tracking**: Displays latest releases from connected platforms.
+-   **Platform Statistics**: Shows follower/subscriber counts for connected platforms.
+-   **Responsive Design**: Adapts to different screen sizes with platform-specific navigation.
+-   **API Integration**: Connects to Spotify, YouTube, Apple Music, and Amazon Music (placeholders for Apple/Amazon).
+-   **Error Handling**: Provides feedback for API connection issues.
 
 ## Deployment
 
-The app is designed to be deployed on Vercel:
+This project is designed to be deployed on Vercel.
 
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Add your environment variables in the Vercel dashboard
-4. Deploy!
+1.  **Link your Git repository** to Vercel.
+2.  **Configure Environment Variables** in your Vercel project settings (as mentioned in "Getting Started").
+3.  Vercel will automatically build and deploy your application.
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License.
+Feel free to open issues or pull requests if you have suggestions or find bugs.

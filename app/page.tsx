@@ -1,743 +1,327 @@
 "use client"
+
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import {
-  Music,
-  Play,
-  ExternalLink,
-  Instagram,
-  Twitter,
-  Youtube,
-  Facebook,
-  AirplayIcon as Spotify,
-  Apple,
-  CloudIcon as SoundCloud,
-  Loader2,
-  Eye,
-} from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useMusicData } from "@/hooks/use-music-data"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Badge } from "@/components/ui/badge"
+import { useIsMobile } from "@/hooks/use-mobile" // Corrected import
+import { useState } from "react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { MenuIcon } from "lucide-react"
 
-interface Release {
-  id: string
-  title: string
-  platform: string
-  releaseDate: string
-  streams: string
-  image: string
-  link: string
-  type: string
-  totalTracks?: number
-  artists?: string
-  views?: number
-  isNew?: boolean
-}
+export default function Home() {
+  const { releases, platformStats, artistData, loading, error } = useMusicData()
+  const isMobile = useIsMobile() // Corrected usage
+  const [selectedPlatform, setSelectedPlatform] = useState("all")
 
-interface PlatformStats {
-  spotify?: {
-    followers: number
-    name: string
-    connected: boolean
-  }
-  youtube?: {
-    subscribers: number
-    videoCount: number
-    name: string
-    connected: boolean
-  }
-  appleMusic?: {
-    followers: number
-    name: string
-    connected: boolean
-  }
-  amazonMusic?: {
-    followers: number
-    name: string
-    connected: boolean
-  }
-}
+  const filteredReleases = releases.filter((release) => {
+    if (selectedPlatform === "all") return true
+    return release.platform.toLowerCase().replace(/\s/g, "") === selectedPlatform.toLowerCase().replace(/\s/g, "")
+  })
 
-interface ArtistData {
-  name: string
-  followers: number
-  image: string
-  genres: string[]
-  popularity: number
-}
-
-export default function EhhmsPortfolio() {
-  const { releases, platformStats, artistData, loading, error, refetch: fetchAllData } = useMusicData()
-
-  const socialLinks = [
-    { name: "Instagram", icon: Instagram, url: "https://instagram.com/ehhm.s", handle: "@ehhm.s" },
-    { name: "Twitter", icon: Twitter, url: "https://twitter.com/ehhms", handle: "@ehhms" },
-    { name: "YouTube", icon: Youtube, url: "https://youtube.com/@ehhms", handle: "@ehhms" },
-    { name: "SoundCloud", icon: SoundCloud, url: "https://soundcloud.com/ehhms", handle: "ehhm.s" },
-    { name: "Facebook", icon: Facebook, url: "https://facebook.com/ehhms", handle: "Ehhm.s" },
+  const platforms = [
+    { id: "all", name: "Alle" },
+    { id: "spotify", name: "Spotify" },
+    { id: "youtube", name: "YouTube" },
+    { id: "applemusic", name: "Apple Music" },
+    { id: "amazonmusic", name: "Amazon Music" },
   ]
-
-  const getPlatformIcon = (platform: string) => {
-    switch (platform) {
-      case "Spotify":
-        return Spotify
-      case "YouTube":
-        return Youtube
-      case "Apple Music":
-        return Apple
-      case "Amazon Music":
-        return Music
-      default:
-        return Music
-    }
-  }
-
-  const getPlatformColor = (platform: string) => {
-    switch (platform) {
-      case "Spotify":
-        return "text-green-400"
-      case "YouTube":
-        return "text-red-400"
-      case "Apple Music":
-        return "text-gray-400"
-      case "Amazon Music":
-        return "text-orange-400"
-      default:
-        return "text-purple-400"
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-purple-500 mx-auto mb-4" />
-          <p className="text-white text-xl">Loading your music releases...</p>
-          <p className="text-gray-400 text-sm mt-2">Fetching data from Spotify and YouTube</p>
-        </div>
-      </div>
-    )
-  }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <div className="text-red-400 text-6xl mb-4">⚠️</div>
-          <h2 className="text-white text-2xl font-bold mb-4">Connection Error</h2>
-          <p className="text-gray-300 mb-6">{error}</p>
-          <Button onClick={fetchAllData} className="bg-purple-600 hover:bg-purple-700">
-            Try Again
-          </Button>
-          <div className="mt-4 flex gap-4 justify-center">
-            <Link href="/test-spotify" className="text-blue-400 hover:underline text-sm">
-              Test Spotify
-            </Link>
-            <Link href="/setup-youtube" className="text-red-400 hover:underline text-sm">
-              Test YouTube
-            </Link>
-          </div>
-        </div>
+      <div className="flex min-h-screen flex-col items-center justify-center p-4 text-center">
+        <h1 className="text-2xl font-bold text-red-500">Fehler beim Laden der Daten</h1>
+        <p className="mt-2 text-gray-600">{error}</p>
+        <p className="mt-4 text-gray-500">Bitte überprüfen Sie Ihre API-Schlüssel und die Server-Logs.</p>
+        <Link href="/setup" className="mt-6">
+          <Button>Setup überprüfen</Button>
+        </Link>
       </div>
     )
   }
 
-  const spotifyReleases = releases.filter((r) => r.platform === "Spotify")
-  const youtubeReleases = releases.filter((r) => r.platform === "YouTube")
-  const appleMusicReleases = releases.filter((r) => r.platform === "Apple Music")
-  const amazonMusicReleases = releases.filter((r) => r.platform === "Amazon Music")
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
-      {/* Header */}
-      <header className="border-b border-gray-800 bg-black/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                <Music className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-2xl font-bold text-white">{artistData?.name || "Ehhm.s"}</h1>
-            </div>
-            <nav className="hidden md:flex items-center gap-6">
-              <Link href="#releases" className="text-gray-300 hover:text-white transition-colors">
-                Releases
-              </Link>
-              <Link href="#social" className="text-gray-300 hover:text-white transition-colors">
-                Social
-              </Link>
-              <Button
-                variant="outline"
-                className="border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white bg-transparent"
-              >
-                Contact
-              </Button>
-            </nav>
+    <div className="flex min-h-screen w-full flex-col bg-gray-100 dark:bg-gray-950">
+      <header className="sticky top-0 z-40 w-full border-b bg-white px-4 py-3 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:px-6">
+        <div className="flex items-center justify-between">
+          <Link className="flex items-center gap-2" href="#">
+            <Image
+              alt="Ehhm.s Logo"
+              className="rounded-full"
+              height="40"
+              src="/placeholder-logo.png"
+              style={{
+                aspectRatio: "40/40",
+                objectFit: "cover",
+              }}
+              width="40"
+            />
+            <span className="text-lg font-semibold">Ehhm.s Music</span>
+          </Link>
+          <nav className="hidden items-center space-x-4 md:flex">
+            <Link
+              className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
+              href="#"
+            >
+              Dashboard
+            </Link>
+            <Link
+              className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
+              href="#"
+            >
+              Releases
+            </Link>
+            <Link
+              className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
+              href="#"
+            >
+              Analytics
+            </Link>
+            <Link
+              className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
+              href="#"
+            >
+              Settings
+            </Link>
+          </nav>
+          <div className="md:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="ghost">
+                  <MenuIcon className="h-6 w-6" />
+                  <span className="sr-only">Toggle navigation menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>
+                  <Link className="w-full" href="#">
+                    Dashboard
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Link className="w-full" href="#">
+                    Releases
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Link className="w-full" href="#">
+                    Analytics
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Link className="w-full" href="#">
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
-
-      {/* Hero Section */}
-      <section className="relative py-20 px-4">
-        <div className="container mx-auto text-center">
-          <div className="mb-8">
-            <Image
-              src={artistData?.image || "/placeholder.svg?height=200&width=200&query=ehhms artist photo"}
-              alt={`${artistData?.name || "Ehhm.s"} Artist Photo`}
-              width={200}
-              height={200}
-              className="rounded-full mx-auto mb-6 border-4 border-purple-500"
-            />
-            <h2 className="text-5xl md:text-7xl font-bold text-white mb-4">{artistData?.name || "Ehhm.s"}</h2>
-            <p className="text-xl text-gray-300 mb-6 max-w-2xl mx-auto">
-              Electronic Music Producer & Sound Designer crafting immersive sonic experiences across multiple dimensions
-              of electronic music.
-            </p>
-
-            {/* Platform Stats Summary */}
-            <div className="flex flex-wrap justify-center gap-6 mb-6">
-              {platformStats.spotify?.connected && (
-                <div className="flex items-center gap-2">
-                  <Spotify className="w-5 h-5 text-green-400" />
-                  <span className="text-green-400 font-semibold">
-                    {platformStats.spotify.followers.toLocaleString()} Spotify Followers
-                  </span>
-                </div>
-              )}
-              {platformStats.youtube?.connected && (
-                <div className="flex items-center gap-2">
-                  <Youtube className="w-5 h-5 text-red-400" />
-                  <span className="text-red-400 font-semibold">
-                    {platformStats.youtube.subscribers.toLocaleString()} YouTube Subscribers
-                  </span>
-                </div>
-              )}
-              {platformStats.appleMusic?.connected && (
-                <div className="flex items-center gap-2">
-                  <Apple className="w-5 h-5 text-gray-400" />
-                  <span className="text-gray-400 font-semibold">
-                    {platformStats.appleMusic.followers.toLocaleString()} Apple Music Followers
-                  </span>
-                </div>
-              )}
-              {platformStats.amazonMusic?.connected && (
-                <div className="flex items-center gap-2">
-                  <Music className="w-5 h-5 text-orange-400" />
-                  <span className="text-orange-400 font-semibold">
-                    {platformStats.amazonMusic.followers.toLocaleString()} Amazon Music Followers
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {artistData && <p className="text-gray-400 text-sm mb-6">Popularity Score: {artistData.popularity}/100</p>}
-
-            <div className="flex flex-wrap justify-center gap-2 mb-8">
-              {artistData?.genres.length > 0 ? (
-                artistData.genres.map((genre, index) => (
-                  <Badge
-                    key={index}
-                    variant="secondary"
-                    className="bg-purple-500/20 text-purple-300 border-purple-500/30"
-                  >
-                    {genre}
-                  </Badge>
-                ))
-              ) : (
-                <>
-                  <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
-                    Electronic
-                  </Badge>
-                  <Badge variant="secondary" className="bg-blue-500/20 text-blue-300 border-blue-500/30">
-                    Synthwave
-                  </Badge>
-                  <Badge variant="secondary" className="bg-pink-500/20 text-pink-300 border-pink-500/30">
-                    Ambient
-                  </Badge>
-                  <Badge variant="secondary" className="bg-green-500/20 text-green-300 border-green-500/30">
-                    Bass Music
-                  </Badge>
-                </>
-              )}
-            </div>
+      <main className="flex-1 p-4 sm:p-6">
+        <section className="mb-8">
+          <h1 className="mb-4 text-3xl font-bold">Willkommen, Ehhm.s!</h1>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {loading ? (
+              <>
+                <Skeleton className="h-[120px] w-full" />
+                <Skeleton className="h-[120px] w-full" />
+                <Skeleton className="h-[120px] w-full" />
+                <Skeleton className="h-[120px] w-full" />
+              </>
+            ) : (
+              <>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Spotify Follower</CardTitle>
+                    <Image
+                      alt="Spotify"
+                      className="h-5 w-5"
+                      src="/placeholder.png?height=20&width=20"
+                      width={20}
+                      height={20}
+                    />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {platformStats.spotify?.connected
+                        ? platformStats.spotify.followers.toLocaleString()
+                        : "Nicht verbunden"}
+                    </div>
+                    {platformStats.spotify?.error && (
+                      <p className="text-xs text-red-500">{platformStats.spotify.error}</p>
+                    )}
+                    {!platformStats.spotify?.connected && (
+                      <Link href="/test-spotify" className="text-xs text-blue-500 hover:underline">
+                        Jetzt verbinden
+                      </Link>
+                    )}
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">YouTube Abonnenten</CardTitle>
+                    <Image
+                      alt="YouTube"
+                      className="h-5 w-5"
+                      src="/placeholder.png?height=20&width=20"
+                      width={20}
+                      height={20}
+                    />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {platformStats.youtube?.connected
+                        ? platformStats.youtube.subscribers.toLocaleString()
+                        : "Nicht verbunden"}
+                    </div>
+                    {platformStats.youtube?.error && (
+                      <p className="text-xs text-red-500">{platformStats.youtube.error}</p>
+                    )}
+                    {!platformStats.youtube?.connected && (
+                      <Link href="/setup-youtube" className="text-xs text-blue-500 hover:underline">
+                        Jetzt verbinden
+                      </Link>
+                    )}
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Apple Music Follower</CardTitle>
+                    <Image
+                      alt="Apple Music"
+                      className="h-5 w-5"
+                      src="/placeholder.png?height=20&width=20"
+                      width={20}
+                      height={20}
+                    />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {platformStats.appleMusic?.connected
+                        ? platformStats.appleMusic.followers.toLocaleString()
+                        : "Nicht verbunden"}
+                    </div>
+                    {platformStats.appleMusic?.error && (
+                      <p className="text-xs text-red-500">{platformStats.appleMusic.error}</p>
+                    )}
+                    {!platformStats.appleMusic?.connected && (
+                      <Link href="/setup-apple-music" className="text-xs text-blue-500 hover:underline">
+                        Jetzt verbinden
+                      </Link>
+                    )}
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Amazon Music Follower</CardTitle>
+                    <Image
+                      alt="Amazon Music"
+                      className="h-5 w-5"
+                      src="/placeholder.png?height=20&width=20"
+                      width={20}
+                      height={20}
+                    />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {platformStats.amazonMusic?.connected
+                        ? platformStats.amazonMusic.followers.toLocaleString()
+                        : "Nicht verbunden"}
+                    </div>
+                    {platformStats.amazonMusic?.error && (
+                      <p className="text-xs text-red-500">{platformStats.amazonMusic.error}</p>
+                    )}
+                    {!platformStats.amazonMusic?.connected && (
+                      <Link href="/setup-amazon-music" className="text-xs text-blue-500 hover:underline">
+                        Jetzt verbinden
+                      </Link>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Music Releases */}
-      <section id="releases" className="py-16 px-4">
-        <div className="container mx-auto">
-          <h3 className="text-3xl font-bold text-white mb-8">Latest Releases</h3>
-
-          {/* Spotify Releases Section */}
-          {spotifyReleases.length > 0 && (
-            <div className="mb-12">
-              <div className="flex items-center gap-3 mb-6">
-                <Spotify className="w-8 h-8 text-green-400" />
-                <h4 className="text-2xl font-semibold text-white">Spotify Releases</h4>
-                <Badge variant="outline" className="text-green-400 border-green-400">
-                  {spotifyReleases.length} Tracks/Albums
-                </Badge>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {spotifyReleases.map((release) => {
-                  const PlatformIcon = getPlatformIcon(release.platform)
-                  const platformColor = getPlatformColor(release.platform)
-                  return (
-                    <Card
-                      key={`${release.platform}-${release.id}`}
-                      className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-all duration-300 group"
-                    >
-                      <CardContent className="p-0">
-                        <div className="relative">
-                          <Image
-                            src={release.image || "/placeholder.svg?height=300&width=300"}
-                            alt={release.title}
-                            width={300}
-                            height={300}
-                            className="w-full aspect-square object-cover rounded-t-lg"
-                          />
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-t-lg flex items-center justify-center">
-                            <Button asChild size="lg" className="bg-white/20 hover:bg-white/30 backdrop-blur-sm">
-                              <Link href={release.link} target="_blank" rel="noopener noreferrer">
-                                <Play className="w-6 h-6 mr-2" />
-                                Listen
-                              </Link>
-                            </Button>
-                          </div>
-                          <Badge className="absolute top-3 right-3 bg-black/70 text-white">{release.type}</Badge>
-                          <div className="absolute top-3 left-3">
-                            <PlatformIcon className={`w-6 h-6 ${platformColor}`} />
-                          </div>
-                        </div>
-                        <div className="p-4">
-                          <div className="flex items-center gap-2 mb-2">
-                            <PlatformIcon className={`w-5 h-5 ${platformColor}`} />
-                            <span className="text-sm text-gray-400">{release.platform}</span>
-                          </div>
-                          <h4 className="text-lg font-semibold text-white mb-2 line-clamp-2">{release.title}</h4>
-                          <div className="flex justify-between items-center text-sm text-gray-400 mb-3">
-                            <span>{new Date(release.releaseDate).toLocaleDateString()}</span>
-                            <span className="flex items-center gap-1">
-                              <Music className="w-3 h-3" />
-                              {release.streams}
-                            </span>
-                          </div>
-                          <Button
-                            asChild
-                            className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-                          >
-                            <Link href={release.link} target="_blank" rel="noopener noreferrer">
-                              Listen on Spotify
-                              <ExternalLink className="w-4 h-4 ml-2" />
-                            </Link>
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* YouTube Releases Section */}
-          {youtubeReleases.length > 0 && (
-            <div className="mb-12">
-              <div className="flex items-center gap-3 mb-6">
-                <Youtube className="w-8 h-8 text-red-400" />
-                <h4 className="text-2xl font-semibold text-white">YouTube Videos</h4>
-                <Badge variant="outline" className="text-red-400 border-red-400">
-                  {youtubeReleases.length} Videos
-                </Badge>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {youtubeReleases.map((release) => {
-                  const PlatformIcon = getPlatformIcon(release.platform)
-                  const platformColor = getPlatformColor(release.platform)
-                  return (
-                    <Card
-                      key={`${release.platform}-${release.id}`}
-                      className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-all duration-300 group"
-                    >
-                      <CardContent className="p-0">
-                        <div className="relative">
-                          <Image
-                            src={release.image || "/placeholder.svg?height=300&width=300"}
-                            alt={release.title}
-                            width={300}
-                            height={300}
-                            className="w-full aspect-video object-cover rounded-t-lg"
-                          />
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-t-lg flex items-center justify-center">
-                            <Button asChild size="lg" className="bg-white/20 hover:bg-white/30 backdrop-blur-sm">
-                              <Link href={release.link} target="_blank" rel="noopener noreferrer">
-                                <Play className="w-6 h-6 mr-2" />
-                                Watch
-                              </Link>
-                            </Button>
-                          </div>
-                          <Badge className="absolute top-3 right-3 bg-black/70 text-white">{release.type}</Badge>
-                          <div className="absolute top-3 left-3">
-                            <PlatformIcon className={`w-6 h-6 ${platformColor}`} />
-                          </div>
-                        </div>
-                        <div className="p-4">
-                          <div className="flex items-center gap-2 mb-2">
-                            <PlatformIcon className={`w-5 h-5 ${platformColor}`} />
-                            <span className="text-sm text-gray-400">{release.platform}</span>
-                          </div>
-                          <h4 className="text-lg font-semibold text-white mb-2 line-clamp-2">{release.title}</h4>
-                          <div className="flex justify-between items-center text-sm text-gray-400 mb-3">
-                            <span>{new Date(release.releaseDate).toLocaleDateString()}</span>
-                            <span className="flex items-center gap-1">
-                              <Eye className="w-3 h-3" />
-                              {release.streams}
-                            </span>
-                          </div>
-                          <Button
-                            asChild
-                            className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
-                          >
-                            <Link href={release.link} target="_blank" rel="noopener noreferrer">
-                              Watch on YouTube
-                              <ExternalLink className="w-4 h-4 ml-2" />
-                            </Link>
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Apple Music Releases Section */}
-          {appleMusicReleases.length > 0 && (
-            <div className="mb-12">
-              <div className="flex items-center gap-3 mb-6">
-                <Apple className="w-8 h-8 text-gray-400" />
-                <h4 className="text-2xl font-semibold text-white">Apple Music Releases</h4>
-                <Badge variant="outline" className="text-gray-400 border-gray-400">
-                  {appleMusicReleases.length} Tracks/Albums
-                </Badge>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {appleMusicReleases.map((release) => {
-                  const PlatformIcon = getPlatformIcon(release.platform)
-                  const platformColor = getPlatformColor(release.platform)
-                  return (
-                    <Card
-                      key={`${release.platform}-${release.id}`}
-                      className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-all duration-300 group"
-                    >
-                      <CardContent className="p-0">
-                        <div className="relative">
-                          <Image
-                            src={release.image || "/placeholder.svg?height=300&width=300"}
-                            alt={release.title}
-                            width={300}
-                            height={300}
-                            className="w-full aspect-square object-cover rounded-t-lg"
-                          />
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-t-lg flex items-center justify-center">
-                            <Button asChild size="lg" className="bg-white/20 hover:bg-white/30 backdrop-blur-sm">
-                              <Link href={release.link} target="_blank" rel="noopener noreferrer">
-                                <Play className="w-6 h-6 mr-2" />
-                                Listen
-                              </Link>
-                            </Button>
-                          </div>
-                          <Badge className="absolute top-3 right-3 bg-black/70 text-white">{release.type}</Badge>
-                          <div className="absolute top-3 left-3">
-                            <PlatformIcon className={`w-6 h-6 ${platformColor}`} />
-                          </div>
-                        </div>
-                        <div className="p-4">
-                          <div className="flex items-center gap-2 mb-2">
-                            <PlatformIcon className={`w-5 h-5 ${platformColor}`} />
-                            <span className="text-sm text-gray-400">{release.platform}</span>
-                          </div>
-                          <h4 className="text-lg font-semibold text-white mb-2 line-clamp-2">{release.title}</h4>
-                          <div className="flex justify-between items-center text-sm text-gray-400 mb-3">
-                            <span>{new Date(release.releaseDate).toLocaleDateString()}</span>
-                            <span className="flex items-center gap-1">
-                              <Music className="w-3 h-3" />
-                              {release.streams}
-                            </span>
-                          </div>
-                          <Button
-                            asChild
-                            className="w-full bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700"
-                          >
-                            <Link href={release.link} target="_blank" rel="noopener noreferrer">
-                              Listen on Apple Music
-                              <ExternalLink className="w-4 h-4 ml-2" />
-                            </Link>
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Amazon Music Releases Section */}
-          {amazonMusicReleases.length > 0 && (
-            <div className="mb-12">
-              <div className="flex items-center gap-3 mb-6">
-                <Music className="w-8 h-8 text-orange-400" />
-                <h4 className="text-2xl font-semibold text-white">Amazon Music Releases</h4>
-                <Badge variant="outline" className="text-orange-400 border-orange-400">
-                  {amazonMusicReleases.length} Tracks/Albums
-                </Badge>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {amazonMusicReleases.map((release) => {
-                  const PlatformIcon = getPlatformIcon(release.platform)
-                  const platformColor = getPlatformColor(release.platform)
-                  return (
-                    <Card
-                      key={`${release.platform}-${release.id}`}
-                      className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-all duration-300 group"
-                    >
-                      <CardContent className="p-0">
-                        <div className="relative">
-                          <Image
-                            src={release.image || "/placeholder.svg?height=300&width=300"}
-                            alt={release.title}
-                            width={300}
-                            height={300}
-                            className="w-full aspect-square object-cover rounded-t-lg"
-                          />
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-t-lg flex items-center justify-center">
-                            <Button asChild size="lg" className="bg-white/20 hover:bg-white/30 backdrop-blur-sm">
-                              <Link href={release.link} target="_blank" rel="noopener noreferrer">
-                                <Play className="w-6 h-6 mr-2" />
-                                Listen
-                              </Link>
-                            </Button>
-                          </div>
-                          {release.isNew && (
-                            <Badge className="absolute top-3 right-3 bg-black/70 text-white">NEU</Badge>
-                          )}
-                          <div className="absolute top-3 left-3">
-                            <PlatformIcon className={`w-6 h-6 ${platformColor}`} />
-                          </div>
-                        </div>
-                        <div className="p-4">
-                          <div className="flex items-center gap-2 mb-1">
-                            <PlatformIcon className={`w-5 h-5 ${platformColor}`} />
-                            <span className="text-sm text-gray-400">{release.platform}</span>
-                          </div>
-                          <h4 className="text-lg font-semibold text-white line-clamp-2">{release.title}</h4>
-                          <p className="text-sm text-gray-400 mb-2">by {release.artists}</p>
-                          <div className="flex justify-between items-center text-sm text-gray-400 mb-3">
-                            <span>{new Date(release.releaseDate).getFullYear()}</span>
-                            <span className="flex items-center gap-1">
-                              <Music className="w-3 h-3" />
-                              {release.streams}
-                            </span>
-                          </div>
-                          <Button
-                            asChild
-                            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
-                          >
-                            <Link href={release.link} target="_blank" rel="noopener noreferrer">
-                              Listen on Amazon Music
-                              <ExternalLink className="w-4 h-4 ml-2" />
-                            </Link>
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {releases.length === 0 && (
-            <div className="text-center py-12">
-              <Music className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-400 text-lg">No releases found</p>
-              <p className="text-gray-500 text-sm">Check your API configurations</p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Platform Stats */}
-      <section className="py-16 px-4 bg-gray-900/50">
-        <div className="container mx-auto">
-          <h3 className="text-3xl font-bold text-white mb-8 text-center">Streaming Platforms</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Spotify */}
-            <div className="text-center">
-              <div
-                className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 ${
-                  platformStats.spotify?.connected ? "bg-green-500" : "bg-gray-600"
-                }`}
-              >
-                <Spotify className="w-8 h-8 text-white" />
-              </div>
-              <h4 className="text-white font-semibold">Spotify</h4>
-              <p className="text-gray-400 text-sm">
-                {platformStats.spotify?.connected
-                  ? `${platformStats.spotify.followers.toLocaleString()} Followers`
-                  : "Not Connected"}
-              </p>
-              <Badge
-                variant="outline"
-                className={
-                  platformStats.spotify?.connected
-                    ? "text-green-400 border-green-400 mt-2"
-                    : "text-gray-400 border-gray-400 mt-2"
-                }
-              >
-                {platformStats.spotify?.connected ? "✅ Live Data" : "❌ Disconnected"}
-              </Badge>
-            </div>
-
-            {/* YouTube */}
-            <div className="text-center">
-              <div
-                className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 ${
-                  platformStats.youtube?.connected ? "bg-red-500" : "bg-gray-600"
-                }`}
-              >
-                <Youtube className="w-8 h-8 text-white" />
-              </div>
-              <h4 className="text-white font-semibold">YouTube</h4>
-              <p className="text-gray-400 text-sm">
-                {platformStats.youtube?.connected
-                  ? `${platformStats.youtube.subscribers.toLocaleString()} Subscribers`
-                  : "Not Connected"}
-              </p>
-              <Badge
-                variant="outline"
-                className={
-                  platformStats.youtube?.connected
-                    ? "text-red-400 border-red-400 mt-2"
-                    : "text-gray-400 border-gray-400 mt-2"
-                }
-              >
-                {platformStats.youtube?.connected ? "✅ Live Data" : "❌ Setup Required"}
-              </Badge>
-            </div>
-
-            {/* Apple Music */}
-            <div className="text-center">
-              <div
-                className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 ${
-                  platformStats.appleMusic?.connected ? "bg-gray-500" : "bg-gray-600"
-                }`}
-              >
-                <Apple className="w-8 h-8 text-white" />
-              </div>
-              <h4 className="text-white font-semibold">Apple Music</h4>
-              <p className="text-gray-400 text-sm">
-                {platformStats.appleMusic?.connected
-                  ? `${platformStats.appleMusic.followers.toLocaleString()} Followers`
-                  : "Not Connected"}
-              </p>
-              <Badge
-                variant="outline"
-                className={
-                  platformStats.appleMusic?.connected
-                    ? "text-gray-400 border-gray-400 mt-2"
-                    : "text-gray-400 border-gray-400 mt-2"
-                }
-              >
-                {platformStats.appleMusic?.connected ? "✅ Live Data" : "❌ Setup Available"}
-              </Badge>
-            </div>
-
-            {/* Amazon Music */}
-            <div className="text-center">
-              <div
-                className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 ${
-                  platformStats.amazonMusic?.connected ? "bg-orange-500" : "bg-gray-600"
-                }`}
-              >
-                <Music className="w-8 h-8 text-white" />
-              </div>
-              <h4 className="text-white font-semibold">Amazon Music</h4>
-              <p className="text-gray-400 text-sm">
-                {platformStats.amazonMusic?.connected
-                  ? `${platformStats.amazonMusic.followers.toLocaleString()} Followers`
-                  : "Not Connected"}
-              </p>
-              <Badge
-                variant="outline"
-                className={
-                  platformStats.amazonMusic?.connected
-                    ? "text-orange-400 border-orange-400 mt-2"
-                    : "text-gray-400 border-gray-400 mt-2"
-                }
-              >
-                {platformStats.amazonMusic?.connected ? "✅ Live Data" : "❌ Not Available"}
-              </Badge>
-            </div>
+        <section>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-2xl font-bold">Deine Releases</h2>
+            {isMobile ? (
+              <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Plattform auswählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  {platforms.map((platform) => (
+                    <SelectItem key={platform.id} value={platform.id}>
+                      {platform.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Tabs value={selectedPlatform} onValueChange={setSelectedPlatform} className="w-auto">
+                <TabsList>
+                  {platforms.map((platform) => (
+                    <TabsTrigger key={platform.id} value={platform.id}>
+                      {platform.name}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            )}
           </div>
-        </div>
-      </section>
-
-      {/* Social Media */}
-      <section id="social" className="py-16 px-4">
-        <div className="container mx-auto">
-          <h3 className="text-3xl font-bold text-white mb-8 text-center">Connect With Ehhm.s</h3>
-          <div className="flex flex-wrap justify-center gap-4">
-            {socialLinks.map((social) => {
-              const SocialIcon = social.icon
-              return (
-                <Button
-                  key={social.name}
-                  asChild
-                  variant="outline"
-                  size="lg"
-                  className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white hover:border-purple-500 transition-all duration-300 bg-transparent"
-                >
-                  <Link href={social.url} target="_blank" rel="noopener noreferrer">
-                    <SocialIcon className="w-5 h-5 mr-2" />
-                    {social.handle}
-                  </Link>
-                </Button>
-              )
-            })}
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {loading
+              ? Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-[250px] w-full rounded-lg" />)
+              : filteredReleases.map((release) => (
+                  <Card key={release.id} className="relative overflow-hidden rounded-lg shadow-lg">
+                    <Link href={release.link} target="_blank" rel="noopener noreferrer">
+                      <Image
+                        alt={release.title}
+                        className="h-48 w-full object-cover"
+                        height="200"
+                        src={release.image || "/placeholder.png?height=200&width=200&query=album cover"}
+                        style={{
+                          aspectRatio: "200/200",
+                          objectFit: "cover",
+                        }}
+                        width="200"
+                      />
+                      {release.isNew && <Badge className="absolute right-2 top-2 bg-green-500 text-white">NEU</Badge>}
+                      <CardContent className="p-3">
+                        <CardTitle className="text-md mb-1 font-semibold">{release.title}</CardTitle>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{release.platform}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                          {new Date(release.releaseDate).toLocaleDateString("de-DE", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </p>
+                        {release.streams && (
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Streams: {release.streams}
+                          </p>
+                        )}
+                        {release.views && (
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Views: {release.views.toLocaleString()}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Link>
+                  </Card>
+                ))}
           </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-gray-800 py-8 px-4">
-        <div className="container mx-auto text-center">
-          <p className="text-gray-400 mb-4">© 2024 {artistData?.name || "Ehhm.s"}. All rights reserved.</p>
-          <p className="text-gray-500 text-sm">Professional Music Production & Sound Design</p>
-          <div className="mt-4 flex justify-center gap-4 text-xs text-gray-500">
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-              Spotify Connected
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-              YouTube Connected
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-gray-500 rounded-full"></span>
-              Apple Music Available
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
-              Amazon Music Available
-            </span>
-          </div>
-        </div>
-      </footer>
+        </section>
+      </main>
     </div>
   )
 }

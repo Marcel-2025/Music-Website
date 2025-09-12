@@ -10,26 +10,31 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'i.scdn.co',
+        hostname: 'i.scdn.co', // Spotify images
       },
       {
         protocol: 'https',
-        hostname: 'i.ytimg.com',
+        hostname: 'i.ytimg.com', // YouTube images
       },
       {
         protocol: 'https',
-        hostname: 'is1-ssl.mzstatic.com',
+        hostname: 'is1-ssl.mzstatic.com', // Apple Music images
       },
       {
         protocol: 'https',
-        hostname: 'm.media-amazon.com',
+        hostname: 'm.media-amazon.com', // Amazon Music images
+      },
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com', // Placeholder images
+      },
+      {
+        protocol: 'https',
+        hostname: 'blob.v0.dev', // v0 generated images
       },
     ],
     unoptimized: true,
   },
-  experimental: {
-    optimizePackageImports: ['lucide-react']
-  }
 };
 
 export default nextConfig;
