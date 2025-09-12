@@ -1,106 +1,106 @@
 # Music Release Web App
 
-This is a web application designed to showcase music releases and artist information, integrating with various streaming platforms like Spotify, YouTube, Apple Music, and Amazon Music.
+A modern web application for tracking music releases across multiple platforms including Spotify, YouTube, Apple Music, and Amazon Music.
 
 ## Features
 
-- **Artist Profile**: Displays artist name, photo, and a brief description.
-- **Platform Statistics**: Shows follower/subscriber counts from connected streaming platforms.
-- **Latest Releases**: Lists music releases with cover art, title, artist, release date, and links to streaming services.
-- **Social Media Links**: Provides links to the artist's social media profiles.
-- **Responsive Design**: Optimized for various screen sizes.
+- **Multi-Platform Integration**: Connect with Spotify, YouTube, Apple Music, and Amazon Music APIs
+- **Release Tracking**: Monitor new releases from your favorite artists
+- **Dashboard**: Clean, modern interface to view all your music data
+- **Real-time Updates**: Get the latest information about new releases
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
 
-## Technologies Used
+## Tech Stack
 
-- Next.js (App Router)
-- React
-- Tailwind CSS
-- shadcn/ui
-- Lucide React Icons
+- **Framework**: Next.js 14 with App Router
+- **Styling**: Tailwind CSS with shadcn/ui components
+- **Language**: TypeScript
+- **APIs**: Spotify Web API, YouTube Data API, Apple Music API, Amazon Music API
+- **Authentication**: JWT tokens for secure API access
 
 ## Getting Started
 
-To run this project locally, follow these steps:
+### Prerequisites
 
-1. **Clone the repository**:
-   \`\`\`bash
-   git clone <repository-url>
-   cd music-release-web-app
-   \`\`\`
+- Node.js 18+ 
+- pnpm (recommended) or npm
+- API credentials for:
+  - Spotify (Client ID, Client Secret)
+  - YouTube (API Key)
+  - Apple Music (optional)
+  - Amazon Music (optional)
 
-2. **Install dependencies**:
-   \`\`\`bash
-   npm install
-   # or
-   yarn install
-   \`\`\`
+### Installation
 
-3. **Set up Environment Variables**:
-   Create a `.env.local` file in the root of your project and add the following environment variables. You will need to obtain API keys and IDs from the respective platforms.
+1. Clone the repository:
+\`\`\`bash
+git clone <repository-url>
+cd music-release-web-app
+\`\`\`
 
-   \`\`\`
-   SPOTIFY_CLIENT_ID=your_spotify_client_id
-   SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-   SPOTIFY_ARTIST_ID=your_spotify_artist_id
-   YOUTUBE_API_KEY=your_youtube_api_key
-   YOUTUBE_CHANNEL_ID=your_youtube_channel_id
-   NEXT_PUBLIC_BASE_URL=http://localhost:3000
-   \`\`\`
-   - `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_ARTIST_ID`: For Spotify API integration.
-   - `YOUTUBE_API_KEY`, `YOUTUBE_CHANNEL_ID`: For YouTube Data API integration.
-   - `NEXT_PUBLIC_BASE_URL`: The base URL of your application (e.g., `http://localhost:3000` for local development).
+2. Install dependencies:
+\`\`\`bash
+pnpm install
+\`\`\`
 
-4. **Run the development server**:
-   \`\`\`bash
-   npm run dev
-   # or
-   yarn dev
-   \`\`\`
+3. Set up environment variables:
+Create a `.env.local` file in the root directory and add your API credentials:
 
-   Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+\`\`\`env
+SPOTIFY_CLIENT_ID=your_spotify_client_id
+SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+SPOTIFY_ARTIST_ID=your_spotify_artist_id
+YOUTUBE_API_KEY=your_youtube_api_key
+YOUTUBE_CHANNEL_ID=your_youtube_channel_id
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+\`\`\`
 
-## Deployment
+4. Run the development server:
+\`\`\`bash
+pnpm dev
+\`\`\`
 
-This application can be easily deployed to Vercel.
-
-1. **Connect your Git repository**:
-   Go to [Vercel Dashboard](https://vercel.com/dashboard) and import your Git repository.
-
-2. **Configure Environment Variables**:
-   Add the environment variables listed in step 3 of "Getting Started" to your Vercel project settings.
-
-3. **Deploy**:
-   Vercel will automatically build and deploy your application.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Project Structure
 
-- `app/`: Contains Next.js App Router pages and API routes.
-- `components/`: Reusable React components, including shadcn/ui components.
-- `hooks/`: Custom React hooks for data fetching and other logic.
-- `lib/`: Utility functions.
-- `public/`: Static assets like images.
-- `styles/`: Global CSS styles.
+\`\`\`
+├── app/                    # Next.js App Router pages
+│   ├── api/               # API routes
+│   ├── dashboard/         # Dashboard page
+│   ├── setup/            # Setup pages
+│   └── globals.css       # Global styles
+├── components/           # React components
+│   └── ui/              # shadcn/ui components
+├── hooks/               # Custom React hooks
+├── lib/                # Utility functions
+└── public/             # Static assets
+\`\`\`
 
-## API Endpoints
+## API Routes
 
-- `/api/releases`: Fetches combined release data from all integrated platforms.
-- `/api/spotify`: Fetches Spotify artist data.
-- `/api/spotify/search-artist`: Searches for a Spotify artist.
-- `/api/youtube`: Fetches YouTube channel data.
-- `/api/youtube/search-channel`: Searches for a YouTube channel.
-- `/api/apple-music`: Fetches mock Apple Music data.
-- `/api/amazon-music`: Fetches mock Amazon Music data.
-- `/api/setup-check`: Checks the status of API connections.
+- `/api/spotify` - Spotify integration
+- `/api/youtube` - YouTube integration  
+- `/api/apple-music` - Apple Music integration
+- `/api/amazon-music` - Amazon Music integration
+- `/api/releases` - Combined release data
 
-## Customization
+## Deployment
 
-- **Styling**: Modify `app/globals.css` and Tailwind CSS classes for design changes.
-- **Data Integration**: Extend API routes in `app/api/` to integrate with more streaming services.
-- **Content**: Update text and images in `app/page.tsx` to match your artist's branding.
+The app is designed to be deployed on Vercel:
+
+1. Push your code to GitHub
+2. Connect your repository to Vercel
+3. Add your environment variables in the Vercel dashboard
+4. Deploy!
 
 ## Contributing
 
-Feel free to fork this repository and contribute.
-\`\`\`
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
-Hier ist der vollständige Inhalt für `lib/utils.ts`:
+## License
+
+This project is licensed under the MIT License.

@@ -24,17 +24,12 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'm.media-amazon.com',
       },
-      {
-        protocol: 'https',
-        hostname: 'blob.v0.dev',
-      },
-      {
-        protocol: 'https',
-        hostname: 'via.placeholder.com',
-      },
     ],
     unoptimized: true,
   },
+  experimental: {
+    optimizePackageImports: ['lucide-react']
+  }
 };
 
 export default nextConfig;
