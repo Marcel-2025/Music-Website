@@ -3,8 +3,20 @@ import { NextResponse } from "next/server"
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET
 
+let spotifyAccessToken: string | null = null
+let tokenExpiryTime = 0
+
 async function getSpotifyAccessToken() {
+  if (spotifyAccessToken && Date.now() < tokenExpiryTime) {
+    return spotifyAccessToken
+  }
+
+  if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
+    throw new Error("Spotify API credentials are not set.")
+  }
+
   const authString = Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString("base64")
+
   const response = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
     headers: {
@@ -15,13 +27,15 @@ async function getSpotifyAccessToken() {
   })
 
   if (!response.ok) {
-    const errorText = await response.text()
-    console.error("Failed to get Spotify access token:", response.status, errorText)
-    throw new Error(`Failed to get Spotify access token: ${response.statusText}`)
+    const errorData = await response.json()
+    console.error("Spotify token error:", errorData)
+    throw new Error(`Failed to get Spotify access token: ${errorData.error_description || response.statusText}`)
   }
 
   const data = await response.json()
-  return data.access_token
+  spotifyAccessToken = data.access_token
+  tokenExpiryTime = Date.now() + data.expires_in * 1000 - 60000 // Refresh 1 minute before expiry
+  return spotifyAccessToken
 }
 
 export async function GET(request: Request) {
@@ -29,17 +43,14 @@ export async function GET(request: Request) {
   const query = searchParams.get("query")
 
   if (!query) {
-    return NextResponse.json({ error: "Query parameter is required" }, { status: 400 })
-  }
-
-  if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
-    return NextResponse.json({ error: "Spotify API credentials not set" }, { status: 400 })
+    return NextResponse.json({ success: false, error: "Query parameter is required" }, { status: 400 })
   }
 
   try {
     const accessToken = await getSpotifyAccessToken()
-    const response = await fetch(
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&limit=5`,
+
+    const searchResponse = await fetch(
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&limit=10`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -47,22 +58,32 @@ export async function GET(request: Request) {
       },
     )
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error("Spotify search API request failed:", response.status, errorText)
-      throw new Error(`Spotify search API request failed: ${response.statusText}`)
+    if (!searchResponse.ok) {
+      const errorData = await searchResponse.json()
+      console.error("Spotify search API error:", errorData)
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Failed to search Spotify artists: ${errorData.error?.message || searchResponse.statusText}`,
+        },
+        { status: searchResponse.status },
+      )
     }
 
-    const data = await response.json()
+    const data = await searchResponse.json()
     const artists = data.artists.items.map((artist: any) => ({
       id: artist.id,
       name: artist.name,
-      imageUrl: artist.images[0]?.url || "/placeholder.svg",
+      followers: artist.followers.total,
+      popularity: artist.popularity,
+      genres: artist.genres,
+      image: artist.images[0]?.url || null,
+      spotifyUrl: artist.external_urls.spotify,
     }))
 
-    return NextResponse.json({ artists })
-  } catch (error) {
-    console.error("Error searching Spotify artists:", error)
-    return NextResponse.json({ error: "Failed to search Spotify artists" }, { status: 500 })
+    return NextResponse.json({ success: true, artists })
+  } catch (error: any) {
+    console.error("Spotify search API route error:", error)
+    return NextResponse.json({ success: false, error: error.message || "Internal server error" }, { status: 500 })
   }
 }

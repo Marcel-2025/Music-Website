@@ -7,34 +7,42 @@ export async function GET(request: Request) {
   const query = searchParams.get("query")
 
   if (!query) {
-    return NextResponse.json({ error: "Query parameter is required" }, { status: 400 })
-  }
-
-  if (!YOUTUBE_API_KEY) {
-    return NextResponse.json({ error: "YouTube API key not set" }, { status: 400 })
+    return NextResponse.json({ success: false, error: "Query parameter is required" }, { status: 400 })
   }
 
   try {
-    const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/search?key=${YOUTUBE_API_KEY}&q=${encodeURIComponent(query)}&part=snippet,id&type=channel&maxResults=5`,
-    )
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error("YouTube search API request failed:", response.status, errorText)
-      throw new Error(`YouTube search API request failed: ${response.statusText}`)
+    if (!YOUTUBE_API_KEY) {
+      return NextResponse.json({ success: false, error: "YouTube API key is not configured." }, { status: 400 })
     }
 
-    const data = await response.json()
+    const searchResponse = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=channel&maxResults=10&key=${YOUTUBE_API_KEY}`,
+    )
+
+    if (!searchResponse.ok) {
+      const errorData = await searchResponse.json()
+      console.error("YouTube search API error:", errorData)
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Failed to search YouTube channels: ${errorData.error?.message || searchResponse.statusText}`,
+        },
+        { status: searchResponse.status },
+      )
+    }
+
+    const data = await searchResponse.json()
     const channels = data.items.map((item: any) => ({
       id: item.id.channelId,
       name: item.snippet.channelTitle,
-      imageUrl: item.snippet.thumbnails.high.url || "/placeholder.svg",
+      description: item.snippet.description,
+      image: item.snippet.thumbnails.high?.url || null,
+      youtubeUrl: `https://www.youtube.com/channel/${item.id.channelId}`,
     }))
 
-    return NextResponse.json({ channels })
-  } catch (error) {
-    console.error("Error searching YouTube channels:", error)
-    return NextResponse.json({ error: "Failed to search YouTube channels" }, { status: 500 })
+    return NextResponse.json({ success: true, channels })
+  } catch (error: any) {
+    console.error("YouTube search API route error:", error)
+    return NextResponse.json({ success: false, error: error.message || "Internal server error" }, { status: 500 })
   }
 }

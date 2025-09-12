@@ -1,27 +1,12 @@
-import { Skeleton } from "@/components/ui/skeleton"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Loader2 } from "lucide-react"
 
-export default function SetupYoutubeLoading() {
+export default function Loading() {
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <Skeleton className="h-6 w-48" />
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-          <Skeleton className="h-10 w-24" />
-        </CardContent>
-      </Card>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="w-8 h-8 animate-spin text-red-500 mx-auto mb-4" />
+        <p className="text-white text-xl">Loading YouTube setup...</p>
+      </div>
     </div>
   )
 }

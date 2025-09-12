@@ -1,7 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  swcMinify: true,
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -20,15 +18,19 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'yt3.ggpht.com',
-      },
-      {
-        protocol: 'https',
         hostname: 'is1-ssl.mzstatic.com',
       },
       {
         protocol: 'https',
         hostname: 'm.media-amazon.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'blob.v0.dev',
+      },
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com',
       },
     ],
     unoptimized: true,

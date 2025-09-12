@@ -1,26 +1,20 @@
 import Link from "next/link"
+import { CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircleIcon } from "lucide-react"
 
 export default function SuccessPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md text-center">
-        <CardHeader>
-          <CheckCircleIcon className="mx-auto h-16 w-16 text-green-500" />
-          <CardTitle className="mt-4 text-2xl font-bold">Setup Complete!</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-muted-foreground">
-            You have successfully configured your integrations. You can now go to the dashboard to see your music
-            releases.
-          </p>
-          <Link href="/dashboard">
-            <Button size="lg">Go to Dashboard</Button>
-          </Link>
-        </CardContent>
-      </Card>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
+      <div className="text-center p-8 bg-gray-800 rounded-lg shadow-lg max-w-md">
+        <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
+        <h1 className="text-4xl font-bold text-white mb-4">Setup Complete!</h1>
+        <p className="text-gray-300 mb-6">
+          Your music dashboard is now configured and ready to display your artist data.
+        </p>
+        <Button asChild className="bg-purple-600 hover:bg-purple-700 text-white text-lg px-8 py-3">
+          <Link href="/dashboard">Go to Dashboard</Link>
+        </Button>
+      </div>
     </div>
   )
 }
