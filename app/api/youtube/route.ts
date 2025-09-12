@@ -24,7 +24,6 @@ interface YouTubeVideoDetails {
 }
 
 function parseDuration(duration: string): number {
-  // Parse ISO 8601 duration format (PT4M13S -> 253 seconds)
   const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
   if (!match) return 0
 
@@ -49,13 +48,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "YouTube API key not configured" }, { status: 500 })
     }
 
-    // First, get the videos from the channel (fetch more to account for filtering)
+    // Fetch more videos initially to account for filtering out Shorts
     const searchResponse = await fetch(
       `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&channelId=${channelId}&part=snippet&order=date&maxResults=50&type=video`,
     )
 
     if (!searchResponse.ok) {
-      throw new Error(`YouTube API error: ${searchResponse.status}`)
+      throw new Error("Failed to fetch YouTube videos")
     }
 
     const searchData = await searchResponse.json()
@@ -66,42 +65,42 @@ export async function GET(request: NextRequest) {
     }
 
     // Get video IDs for details API call
-    const videoIds = videos.map((video) => video.id.videoId).join(",")
+    const videoIds = videos.map((video: YouTubeVideo) => video.id.videoId).join(",")
 
-    // Get video details including duration
+    // Fetch video details to get duration
     const detailsResponse = await fetch(
       `https://www.googleapis.com/youtube/v3/videos?key=${apiKey}&id=${videoIds}&part=contentDetails`,
     )
 
     if (!detailsResponse.ok) {
-      throw new Error(`YouTube API error: ${detailsResponse.status}`)
+      throw new Error("Failed to fetch video details")
     }
 
     const detailsData = await detailsResponse.json()
     const videoDetails: YouTubeVideoDetails[] = detailsData.items || []
 
     // Create a map of video ID to duration
-    const durationMap = new Map<string, number>()
-    videoDetails.forEach((detail) => {
+    const durationMap = new Map()
+    videoDetails.forEach((detail: YouTubeVideoDetails) => {
       const durationInSeconds = parseDuration(detail.contentDetails.duration)
       durationMap.set(detail.id, durationInSeconds)
     })
 
-    // Filter out YouTube Shorts (videos under 60 seconds) and format the response
+    // Filter out YouTube Shorts (videos under 60 seconds)
     const filteredVideos = videos
-      .filter((video) => {
-        const duration = durationMap.get(video.id.videoId) || 0
-        return duration >= 60 // Exclude videos under 60 seconds (Shorts)
+      .filter((video: YouTubeVideo) => {
+        const duration = durationMap.get(video.id.videoId)
+        return duration && duration >= 60 // Only include videos 60 seconds or longer
       })
       .slice(0, 20) // Limit to 20 videos after filtering
-      .map((video) => ({
+      .map((video: YouTubeVideo) => ({
         id: video.id.videoId,
         title: video.snippet.title,
         description: video.snippet.description,
         thumbnail: video.snippet.thumbnails.medium.url,
         publishedAt: video.snippet.publishedAt,
         url: `https://www.youtube.com/watch?v=${video.id.videoId}`,
-        duration: durationMap.get(video.id.videoId) || 0,
+        duration: durationMap.get(video.id.videoId),
       }))
 
     return NextResponse.json({ videos: filteredVideos })
