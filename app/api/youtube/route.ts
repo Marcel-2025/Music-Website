@@ -1,8 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY
-const YOUTUBE_CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID
-
 interface YouTubeVideo {
   id: {
     videoId: string
@@ -10,12 +7,12 @@ interface YouTubeVideo {
   snippet: {
     title: string
     description: string
-    publishedAt: string
     thumbnails: {
       medium: {
         url: string
       }
     }
+    publishedAt: string
   }
 }
 
@@ -27,7 +24,7 @@ interface YouTubeVideoDetails {
 }
 
 function parseDuration(duration: string): number {
-  // Parse ISO 8601 duration format (PT4M13S) to seconds
+  // Parse ISO 8601 duration format (PT4M13S -> 253 seconds)
   const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
   if (!match) return 0
 
@@ -40,14 +37,23 @@ function parseDuration(duration: string): number {
 
 export async function GET(request: NextRequest) {
   try {
-    if (!YOUTUBE_API_KEY || !YOUTUBE_CHANNEL_ID) {
-      return NextResponse.json({ error: "YouTube API credentials not configured" }, { status: 500 })
+    const { searchParams } = new URL(request.url)
+    const channelId = searchParams.get("channelId") || process.env.YOUTUBE_CHANNEL_ID
+
+    if (!channelId) {
+      return NextResponse.json({ error: "Channel ID is required" }, { status: 400 })
+    }
+
+    const apiKey = process.env.YOUTUBE_API_KEY
+    if (!apiKey) {
+      return NextResponse.json({ error: "YouTube API key not configured" }, { status: 500 })
     }
 
     // First, get the videos from the channel (fetch more to account for filtering)
-    const searchUrl = `https://www.googleapis.com/youtube/v3/search?key=${YOUTUBE_API_KEY}&channelId=${YOUTUBE_CHANNEL_ID}&part=snippet&order=date&maxResults=50&type=video`
+    const searchResponse = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&channelId=${channelId}&part=snippet&order=date&maxResults=50&type=video`,
+    )
 
-    const searchResponse = await fetch(searchUrl)
     if (!searchResponse.ok) {
       throw new Error(`YouTube API error: ${searchResponse.status}`)
     }
@@ -63,9 +69,10 @@ export async function GET(request: NextRequest) {
     const videoIds = videos.map((video) => video.id.videoId).join(",")
 
     // Get video details including duration
-    const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?key=${YOUTUBE_API_KEY}&id=${videoIds}&part=contentDetails`
+    const detailsResponse = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?key=${apiKey}&id=${videoIds}&part=contentDetails`,
+    )
 
-    const detailsResponse = await fetch(detailsUrl)
     if (!detailsResponse.ok) {
       throw new Error(`YouTube API error: ${detailsResponse.status}`)
     }
@@ -91,8 +98,8 @@ export async function GET(request: NextRequest) {
         id: video.id.videoId,
         title: video.snippet.title,
         description: video.snippet.description,
-        publishedAt: video.snippet.publishedAt,
         thumbnail: video.snippet.thumbnails.medium.url,
+        publishedAt: video.snippet.publishedAt,
         url: `https://www.youtube.com/watch?v=${video.id.videoId}`,
         duration: durationMap.get(video.id.videoId) || 0,
       }))
