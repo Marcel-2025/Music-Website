@@ -1,111 +1,89 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 
-interface YouTubeVideo {
-  id: {
-    videoId: string
-  }
-  snippet: {
-    title: string
-    description: string
-    thumbnails: {
-      medium: {
-        url: string
-      }
-    }
-    publishedAt: string
-  }
-}
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY
+const YOUTUBE_CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID
 
-interface YouTubeVideoDetails {
-  id: string
-  contentDetails: {
-    duration: string
-  }
-}
-
-function parseDuration(duration: string): number {
-  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
-  if (!match) return 0
-
-  const hours = Number.parseInt(match[1] || "0")
-  const minutes = Number.parseInt(match[2] || "0")
-  const seconds = Number.parseInt(match[3] || "0")
-
-  return hours * 3600 + minutes * 60 + seconds
-}
-
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url)
-    const channelId = searchParams.get("channelId") || process.env.YOUTUBE_CHANNEL_ID
-
-    if (!channelId) {
-      return NextResponse.json({ error: "Channel ID is required" }, { status: 400 })
+    if (!YOUTUBE_API_KEY || !YOUTUBE_CHANNEL_ID) {
+      return NextResponse.json(
+        { success: false, error: "YouTube API key or Channel ID is not configured." },
+        { status: 400 },
+      )
     }
 
-    const apiKey = process.env.YOUTUBE_API_KEY
-    if (!apiKey) {
-      return NextResponse.json({ error: "YouTube API key not configured" }, { status: 500 })
-    }
-
-    // Fetch more videos initially to account for filtering out Shorts
-    const searchResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&channelId=${channelId}&part=snippet&order=date&maxResults=50&type=video`,
+    // Fetch channel details
+    const channelResponse = await fetch(
+      `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${YOUTUBE_CHANNEL_ID}&key=${YOUTUBE_API_KEY}`,
     )
 
-    if (!searchResponse.ok) {
-      throw new Error("Failed to fetch YouTube videos")
+    if (!channelResponse.ok) {
+      const errorData = await channelResponse.json()
+      console.error("YouTube channel API error:", errorData)
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Failed to fetch YouTube channel data: ${errorData.error?.message || channelResponse.statusText}`,
+        },
+        { status: channelResponse.status },
+      )
+    }
+    const channelData = await channelResponse.json()
+    const channel = channelData.items[0]
+
+    if (!channel) {
+      return NextResponse.json(
+        { success: false, error: "YouTube channel not found with the provided ID." },
+        { status: 404 },
+      )
     }
 
-    const searchData = await searchResponse.json()
-    const videos: YouTubeVideo[] = searchData.items || []
-
-    if (videos.length === 0) {
-      return NextResponse.json({ videos: [] })
-    }
-
-    // Get video IDs for details API call
-    const videoIds = videos.map((video: YouTubeVideo) => video.id.videoId).join(",")
-
-    // Fetch video details to get duration
-    const detailsResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?key=${apiKey}&id=${videoIds}&part=contentDetails`,
+    // Fetch channel's videos (releases)
+    const videosResponse = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${YOUTUBE_CHANNEL_ID}&type=video&order=date&maxResults=20&key=${YOUTUBE_API_KEY}`,
     )
 
-    if (!detailsResponse.ok) {
-      throw new Error("Failed to fetch video details")
+    if (!videosResponse.ok) {
+      const errorData = await videosResponse.json()
+      console.error("YouTube videos API error:", errorData)
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Failed to fetch YouTube videos: ${errorData.error?.message || videosResponse.statusText}`,
+        },
+        { status: videosResponse.status },
+      )
     }
+    const videosData = await videosResponse.json()
 
-    const detailsData = await detailsResponse.json()
-    const videoDetails: YouTubeVideoDetails[] = detailsData.items || []
+    const releases = videosData.items.map((video: any) => ({
+      id: video.id.videoId,
+      title: video.snippet.title,
+      platform: "YouTube",
+      releaseDate: video.snippet.publishedAt,
+      streams: "N/A", // YouTube search API doesn't provide view counts directly, would need separate video details call
+      image: video.snippet.thumbnails.high?.url || "/placeholder.svg",
+      link: `https://www.youtube.com/watch?v=${video.id.videoId}`,
+      type: "Video",
+      artists: video.snippet.channelTitle,
+    }))
 
-    // Create a map of video ID to duration
-    const durationMap = new Map()
-    videoDetails.forEach((detail: YouTubeVideoDetails) => {
-      const durationInSeconds = parseDuration(detail.contentDetails.duration)
-      durationMap.set(detail.id, durationInSeconds)
+    return NextResponse.json({
+      success: true,
+      channel: {
+        id: channel.id,
+        name: channel.snippet.title,
+        subscribers: Number.parseInt(channel.statistics.subscriberCount),
+        videoCount: Number.parseInt(channel.statistics.videoCount),
+        viewCount: Number.parseInt(channel.statistics.viewCount),
+        image: channel.snippet.thumbnails.high?.url || "/placeholder.svg",
+        youtubeUrl: `https://www.youtube.com/channel/${channel.id}`,
+      },
+      releases: releases,
+      totalReleases: releases.length,
     })
-
-    // Filter out YouTube Shorts (videos under 60 seconds)
-    const filteredVideos = videos
-      .filter((video: YouTubeVideo) => {
-        const duration = durationMap.get(video.id.videoId)
-        return duration && duration >= 60 // Only include videos 60 seconds or longer
-      })
-      .slice(0, 20) // Limit to 20 videos after filtering
-      .map((video: YouTubeVideo) => ({
-        id: video.id.videoId,
-        title: video.snippet.title,
-        description: video.snippet.description,
-        thumbnail: video.snippet.thumbnails.medium.url,
-        publishedAt: video.snippet.publishedAt,
-        url: `https://www.youtube.com/watch?v=${video.id.videoId}`,
-        duration: durationMap.get(video.id.videoId),
-      }))
-
-    return NextResponse.json({ videos: filteredVideos })
-  } catch (error) {
-    console.error("YouTube API error:", error)
-    return NextResponse.json({ error: "Failed to fetch YouTube videos" }, { status: 500 })
+  } catch (error: any) {
+    console.error("YouTube API route error:", error)
+    return NextResponse.json({ success: false, error: error.message || "Internal server error" }, { status: 500 })
   }
 }

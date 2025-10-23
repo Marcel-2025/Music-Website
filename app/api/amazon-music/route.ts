@@ -1,64 +1,118 @@
 import { NextResponse } from "next/server"
 
 export async function GET() {
-  // This is a placeholder for Amazon Music API integration.
-  // In a real application, you would fetch data from Amazon Music's API here.
-  // For now, we return mock data.
-
+  // Amazon Music does not have a public API for fetching artist releases or stats.
+  // This route is a placeholder and will always return an empty array and disconnected status.
+  // For demonstration, we'll return mock data with functional links.
   const mockReleases = [
     {
-      id: "am1",
-      title: "Echoes of the Forest",
+      id: "amz1",
+      title: "Industrial Night",
       platform: "Amazon Music",
-      releaseDate: "2024-06-15",
-      streams: "1.2M",
-      image: "/placeholder.png?height=300&width=300&query=forest album cover",
-      link: "https://music.amazon.com/mock-echoes-forest",
-      type: "Album",
+      releaseDate: "2025-07-30", // Future date to show as "NEW"
+      streams: "N/A",
+      image: "/placeholder.svg?height=300&width=300",
+      link: "https://music.amazon.de/albums/B0F89B4G8H", // Generic Amazon Music album link for Ehhm.s
+      type: "Single",
+      totalTracks: 1,
       artists: "Ehhm.s",
     },
     {
-      id: "am2",
-      title: "City Lights (feat. Guest Artist)",
+      id: "amz2",
+      title: "Dawn of Emotions",
       platform: "Amazon Music",
-      releaseDate: "2024-05-20",
-      streams: "850K",
-      image: "/placeholder.png?height=300&width=300&query=city lights album cover",
-      link: "https://music.amazon.com/mock-city-lights",
+      releaseDate: "2025-06-15",
+      streams: "N/A",
+      image: "/placeholder.svg?height=300&width=300",
+      link: "https://music.amazon.de/albums/B0F89B4G8H",
       type: "Single",
-      artists: "Ehhm.s, Guest Artist",
+      totalTracks: 1,
+      artists: "Ehhm.s",
     },
     {
-      id: "am3",
-      title: "Rainy Day Dreams",
+      id: "amz3",
+      title: "Dopamine Loops",
       platform: "Amazon Music",
-      releaseDate: "2024-04-01",
-      streams: "500K",
-      image: "/placeholder.png?height=300&width=300&query=rainy day album cover",
-      link: "https://music.amazon.com/mock-rainy-day-dreams",
-      type: "EP",
+      releaseDate: "2025-05-01",
+      streams: "N/A",
+      image: "/placeholder.svg?height=300&width=300",
+      link: "https://music.amazon.de/albums/B0F89B4G8H",
+      type: "Single",
+      totalTracks: 1,
+      artists: "Ehhm.s",
+    },
+    {
+      id: "amz4",
+      title: "Feel the Energy",
+      platform: "Amazon Music",
+      releaseDate: "2025-04-20",
+      streams: "N/A",
+      image: "/placeholder.svg?height=300&width=300",
+      link: "https://music.amazon.de/albums/B0F89B4G8H",
+      type: "Single",
+      totalTracks: 1,
+      artists: "Ehhm.s",
+    },
+    {
+      id: "amz5",
+      title: "Festival Rising",
+      platform: "Amazon Music",
+      releaseDate: "2025-03-10",
+      streams: "N/A",
+      image: "/placeholder.svg?height=300&width=300",
+      link: "https://music.amazon.de/albums/B0F89B4G8H",
+      type: "Single",
+      totalTracks: 1,
+      artists: "Ehhm.s",
+    },
+    {
+      id: "amz6",
+      title: "Eternal Echoes",
+      platform: "Amazon Music",
+      releaseDate: "2025-02-05",
+      streams: "N/A",
+      image: "/placeholder.svg?height=300&width=300",
+      link: "https://music.amazon.de/albums/B0F89B4G8H",
+      type: "Single",
+      totalTracks: 1,
+      artists: "Ehhm.s",
+    },
+    {
+      id: "amz7",
+      title: "Euphoric Rave",
+      platform: "Amazon Music",
+      releaseDate: "2025-01-20",
+      streams: "N/A",
+      image: "/placeholder.svg?height=300&width=300",
+      link: "https://music.amazon.de/albums/B0F89B4G8H",
+      type: "Single",
+      totalTracks: 1,
+      artists: "Ehhm.s",
+    },
+    {
+      id: "amz8",
+      title: "Echoes of Minimalismus",
+      platform: "Amazon Music",
+      releaseDate: "2024-12-01",
+      streams: "N/A",
+      image: "/placeholder.svg?height=300&width=300",
+      link: "https://music.amazon.de/albums/B0F89B4G8H",
+      type: "Single",
+      totalTracks: 1,
       artists: "Ehhm.s",
     },
   ]
 
-  const mockArtistData = {
-    name: "Ehhm.s",
-    followers: 75000, // Mock followers
-    image: "/placeholder-user.png",
-    genres: ["Electronic", "Ambient"],
-    popularity: 70,
-  }
-
   return NextResponse.json({
     success: true,
     releases: mockReleases,
-    platformStats: {
-      amazonMusic: {
-        followers: mockArtistData.followers,
-        name: mockArtistData.name,
-        connected: true,
-      },
+    artist: {
+      name: "Ehhm.s",
+      followers: 12345, // Mock followers for display
+      image: "/placeholder.svg?height=200&width=200",
+      genres: ["Electronic", "Ambient", "Synthwave"],
+      popularity: 75, // Mock popularity
     },
-    artistData: mockArtistData,
+    connected: true, // Indicate connection for UI purposes
   })
 }

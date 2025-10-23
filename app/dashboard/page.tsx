@@ -1,327 +1,492 @@
 "use client"
 
-import Image from "next/image"
-import Link from "next/link"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useMusicData } from "@/hooks/use-music-data"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { useState } from "react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MenuIcon } from "lucide-react"
+import {
+  CheckCircle,
+  XCircle,
+  Music,
+  AirplayIcon as Spotify,
+  Youtube,
+  RefreshCw,
+  ExternalLink,
+  Eye,
+  TrendingUp,
+  Apple,
+} from "lucide-react"
+import Link from "next/link"
+import Image from "next/image"
 
 export default function DashboardPage() {
-  const { releases, platformStats, artistData, loading, error } = useMusicData()
-  const isMobile = useIsMobile()
-  const [selectedPlatform, setSelectedPlatform] = useState("all")
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
 
-  const filteredReleases = releases.filter((release) => {
-    if (selectedPlatform === "all") return true
-    return release.platform.toLowerCase().replace(/\s/g, "") === selectedPlatform.toLowerCase().replace(/\s/g, "")
-  })
+  useEffect(() => {
+    fetchDashboardData()
+  }, [])
 
-  const platforms = [
-    { id: "all", name: "Alle" },
-    { id: "spotify", name: "Spotify" },
-    { id: "youtube", name: "YouTube" },
-    { id: "applemusic", name: "Apple Music" },
-    { id: "amazonmusic", name: "Amazon Music" },
-  ]
+  const fetchDashboardData = async () => {
+    setLoading(true)
+    try {
+      const [releasesRes, spotifyRes, youtubeRes, appleMusicRes, amazonMusicRes] = await Promise.allSettled([
+        fetch("/api/releases"),
+        fetch("/api/spotify"),
+        fetch("/api/youtube"),
+        fetch("/api/apple-music"), // Fetch Apple Music status
+        fetch("/api/amazon-music"), // Fetch Amazon Music status
+      ])
 
-  if (error) {
+      const dashboardData = {
+        releases: null,
+        spotify: null,
+        youtube: null,
+        appleMusic: null, // Add Apple Music to dashboard data
+        amazonMusic: null, // Add Amazon Music to dashboard data
+        errors: [],
+      }
+
+      // Process releases
+      if (releasesRes.status === "fulfilled" && releasesRes.value.ok) {
+        dashboardData.releases = await releasesRes.value.json()
+      } else {
+        dashboardData.errors.push("Failed to fetch combined releases")
+      }
+
+      // Process Spotify
+      if (spotifyRes.status === "fulfilled" && spotifyRes.value.ok) {
+        dashboardData.spotify = await spotifyRes.value.json()
+      } else if (spotifyRes.status === "fulfilled") {
+        const errorData = await spotifyRes.value.json()
+        dashboardData.errors.push(`Spotify: ${errorData.error}`)
+      }
+
+      // Process YouTube
+      if (youtubeRes.status === "fulfilled" && youtubeRes.value.ok) {
+        dashboardData.youtube = await youtubeRes.value.json()
+      } else if (youtubeRes.status === "fulfilled") {
+        const errorData = await youtubeRes.value.json()
+        dashboardData.errors.push(`YouTube: ${errorData.error}`)
+      }
+
+      // Process Apple Music
+      if (appleMusicRes.status === "fulfilled" && appleMusicRes.value.ok) {
+        dashboardData.appleMusic = await appleMusicRes.value.json()
+      } else if (appleMusicRes.status === "fulfilled") {
+        const errorData = await appleMusicRes.value.json()
+        dashboardData.errors.push(`Apple Music: ${errorData.error}`)
+      }
+
+      // Process Amazon Music
+      if (amazonMusicRes.status === "fulfilled" && amazonMusicRes.value.ok) {
+        dashboardData.amazonMusic = await amazonMusicRes.value.json()
+      } else if (amazonMusicRes.status === "fulfilled") {
+        const errorData = await amazonMusicRes.value.json()
+        dashboardData.errors.push(`Amazon Music: ${errorData.error}`)
+      }
+
+      setData(dashboardData)
+    } catch (error) {
+      console.error("Dashboard fetch error:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-4 text-center">
-        <h1 className="text-2xl font-bold text-red-500">Fehler beim Laden der Daten</h1>
-        <p className="mt-2 text-gray-600">{error}</p>
-        <p className="mt-4 text-gray-500">Bitte überprüfen Sie Ihre API-Schlüssel und die Server-Logs.</p>
-        <Link href="/setup" className="mt-6">
-          <Button>Setup überprüfen</Button>
-        </Link>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 animate-spin text-purple-500 mx-auto mb-4" />
+          <p className="text-white text-xl">Loading dashboard...</p>
+        </div>
       </div>
     )
   }
 
-  return (
-    <div className="flex min-h-screen w-full flex-col bg-gray-100 dark:bg-gray-950">
-      <header className="sticky top-0 z-40 w-full border-b bg-white px-4 py-3 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:px-6">
-        <div className="flex items-center justify-between">
-          <Link className="flex items-center gap-2" href="#">
-            <Image
-              alt="Ehhm.s Logo"
-              className="rounded-full"
-              height="40"
-              src="/placeholder-logo.png"
-              style={{
-                aspectRatio: "40/40",
-                objectFit: "cover",
-              }}
-              width="40"
-            />
-            <span className="text-lg font-semibold">Ehhm.s Music</span>
-          </Link>
-          <nav className="hidden items-center space-x-4 md:flex">
-            <Link
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
-              href="#"
-            >
-              Dashboard
-            </Link>
-            <Link
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
-              href="#"
-            >
-              Releases
-            </Link>
-            <Link
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
-              href="#"
-            >
-              Analytics
-            </Link>
-            <Link
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
-              href="#"
-            >
-              Settings
-            </Link>
-          </nav>
-          <div className="md:hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="icon" variant="ghost">
-                  <MenuIcon className="h-6 w-6" />
-                  <span className="sr-only">Toggle navigation menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>
-                  <Link className="w-full" href="#">
-                    Dashboard
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link className="w-full" href="#">
-                    Releases
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link className="w-full" href="#">
-                    Analytics
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link className="w-full" href="#">
-                    Settings
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </header>
-      <main className="flex-1 p-4 sm:p-6">
-        <section className="mb-8">
-          <h1 className="mb-4 text-3xl font-bold">Willkommen, Ehhm.s!</h1>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {loading ? (
-              <>
-                <Skeleton className="h-[120px] w-full" />
-                <Skeleton className="h-[120px] w-full" />
-                <Skeleton className="h-[120px] w-full" />
-                <Skeleton className="h-[120px] w-full" />
-              </>
-            ) : (
-              <>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Spotify Follower</CardTitle>
-                    <Image
-                      alt="Spotify"
-                      className="h-5 w-5"
-                      src="/placeholder.png?height=20&width=20"
-                      width={20}
-                      height={20}
-                    />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {platformStats.spotify?.connected
-                        ? platformStats.spotify.followers.toLocaleString()
-                        : "Nicht verbunden"}
-                    </div>
-                    {platformStats.spotify?.error && (
-                      <p className="text-xs text-red-500">{platformStats.spotify.error}</p>
-                    )}
-                    {!platformStats.spotify?.connected && (
-                      <Link href="/test-spotify" className="text-xs text-blue-500 hover:underline">
-                        Jetzt verbinden
-                      </Link>
-                    )}
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">YouTube Abonnenten</CardTitle>
-                    <Image
-                      alt="YouTube"
-                      className="h-5 w-5"
-                      src="/placeholder.png?height=20&width=20"
-                      width={20}
-                      height={20}
-                    />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {platformStats.youtube?.connected
-                        ? platformStats.youtube.subscribers.toLocaleString()
-                        : "Nicht verbunden"}
-                    </div>
-                    {platformStats.youtube?.error && (
-                      <p className="text-xs text-red-500">{platformStats.youtube.error}</p>
-                    )}
-                    {!platformStats.youtube?.connected && (
-                      <Link href="/setup-youtube" className="text-xs text-blue-500 hover:underline">
-                        Jetzt verbinden
-                      </Link>
-                    )}
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Apple Music Follower</CardTitle>
-                    <Image
-                      alt="Apple Music"
-                      className="h-5 w-5"
-                      src="/placeholder.png?height=20&width=20"
-                      width={20}
-                      height={20}
-                    />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {platformStats.appleMusic?.connected
-                        ? platformStats.appleMusic.followers.toLocaleString()
-                        : "Nicht verbunden"}
-                    </div>
-                    {platformStats.appleMusic?.error && (
-                      <p className="text-xs text-red-500">{platformStats.appleMusic.error}</p>
-                    )}
-                    {!platformStats.appleMusic?.connected && (
-                      <Link href="/setup-apple-music" className="text-xs text-blue-500 hover:underline">
-                        Jetzt verbinden
-                      </Link>
-                    )}
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Amazon Music Follower</CardTitle>
-                    <Image
-                      alt="Amazon Music"
-                      className="h-5 w-5"
-                      src="/placeholder.png?height=20&width=20"
-                      width={20}
-                      height={20}
-                    />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {platformStats.amazonMusic?.connected
-                        ? platformStats.amazonMusic.followers.toLocaleString()
-                        : "Nicht verbunden"}
-                    </div>
-                    {platformStats.amazonMusic?.error && (
-                      <p className="text-xs text-red-500">{platformStats.amazonMusic.error}</p>
-                    )}
-                    {!platformStats.amazonMusic?.connected && (
-                      <Link href="/setup-amazon-music" className="text-xs text-blue-500 hover:underline">
-                        Jetzt verbinden
-                      </Link>
-                    )}
-                  </CardContent>
-                </Card>
-              </>
-            )}
-          </div>
-        </section>
+  const spotifyConnected = data?.spotify?.success
+  const youtubeConnected = data?.youtube?.success
+  const appleMusicConnected = data?.appleMusic?.success
+  const amazonMusicConnected = data?.amazonMusic?.connected // Use 'connected' from mock data
+  const totalReleases = data?.releases?.totalReleases || 0
+  const spotifyReleases = data?.releases?.releases?.filter((r) => r.platform === "Spotify").length || 0
+  const youtubeReleases = data?.releases?.releases?.filter((r) => r.platform === "YouTube").length || 0
+  const appleMusicReleases = data?.releases?.releases?.filter((r) => r.platform === "Apple Music").length || 0
+  const amazonMusicReleases = data?.releases?.releases?.filter((r) => r.platform === "Amazon Music").length || 0
 
-        <section>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Deine Releases</h2>
-            {isMobile ? (
-              <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Plattform auswählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  {platforms.map((platform) => (
-                    <SelectItem key={platform.id} value={platform.id}>
-                      {platform.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Tabs value={selectedPlatform} onValueChange={setSelectedPlatform} className="w-auto">
-                <TabsList>
-                  {platforms.map((platform) => (
-                    <TabsTrigger key={platform.id} value={platform.id}>
-                      {platform.name}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-            )}
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-8">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Music className="w-12 h-12 text-white" />
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {loading
-              ? Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-[250px] w-full rounded-lg" />)
-              : filteredReleases.map((release) => (
-                  <Card key={release.id} className="relative overflow-hidden rounded-lg shadow-lg">
-                    <Link href={release.link} target="_blank" rel="noopener noreferrer">
+          <h1 className="text-4xl font-bold text-white mb-2">Ehhm.s Music Dashboard</h1>
+          <p className="text-gray-300">Complete overview of your music platform integrations</p>
+        </div>
+
+        {/* Status Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-6 text-center">
+              <div className="text-3xl font-bold text-white mb-2">{totalReleases}</div>
+              <div className="text-gray-400">Total Releases</div>
+              <div className="flex justify-center gap-2 mt-2">
+                <Badge variant="outline" className="text-green-400 border-green-400 text-xs">
+                  {spotifyReleases} Spotify
+                </Badge>
+                <Badge variant="outline" className="text-red-400 border-red-400 text-xs">
+                  {youtubeReleases} YouTube
+                </Badge>
+                <Badge variant="outline" className="text-gray-400 border-gray-400 text-xs">
+                  {appleMusicReleases} Apple Music
+                </Badge>
+                <Badge variant="outline" className="text-orange-400 border-orange-400 text-xs">
+                  {amazonMusicReleases} Amazon Music
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-6 text-center">
+              <div className="text-3xl font-bold text-green-400 mb-2">
+                {data?.spotify?.artist?.followers.toLocaleString() || "0"}
+              </div>
+              <div className="text-gray-400">Spotify Followers</div>
+              <div className="flex justify-center items-center gap-1 mt-2">
+                <TrendingUp className="w-4 h-4 text-green-400" />
+                <span className="text-green-400 text-sm">Popularity: {data?.spotify?.artist?.popularity || 0}/100</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-6 text-center">
+              <div className="text-3xl font-bold text-red-400 mb-2">
+                {data?.youtube?.channel?.subscribers.toLocaleString() || "0"}
+              </div>
+              <div className="text-gray-400">YouTube Subscribers</div>
+              <div className="flex justify-center items-center gap-1 mt-2">
+                <Eye className="w-4 h-4 text-red-400" />
+                <span className="text-red-400 text-sm">
+                  {data?.youtube?.channel?.videoCount.toLocaleString() || 0} Videos
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Platform Status */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Spotify Status */}
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Spotify className="w-6 h-6 text-green-500" />
+                Spotify Integration
+                {spotifyConnected ? (
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                ) : (
+                  <XCircle className="w-5 h-5 text-red-500" />
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {spotifyConnected ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    {data.spotify.artist.image && (
                       <Image
-                        alt={release.title}
-                        className="h-48 w-full object-cover"
-                        height="200"
-                        src={release.image || "/placeholder.png?height=200&width=200&query=album cover"}
-                        style={{
-                          aspectRatio: "200/200",
-                          objectFit: "cover",
-                        }}
-                        width="200"
+                        src={data.spotify.artist.image || "/placeholder.svg"}
+                        alt={data.spotify.artist.name}
+                        width={60}
+                        height={60}
+                        className="rounded-full"
                       />
-                      {release.isNew && <Badge className="absolute right-2 top-2 bg-green-500 text-white">NEU</Badge>}
-                      <CardContent className="p-3">
-                        <CardTitle className="text-md mb-1 font-semibold">{release.title}</CardTitle>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{release.platform}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">
-                          {new Date(release.releaseDate).toLocaleDateString("de-DE", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </p>
-                        {release.streams && (
-                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Streams: {release.streams}
-                          </p>
-                        )}
-                        {release.views && (
-                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Views: {release.views.toLocaleString()}
-                          </p>
-                        )}
-                      </CardContent>
+                    )}
+                    <div>
+                      <h4 className="text-white font-semibold">{data.spotify.artist.name}</h4>
+                      <p className="text-green-400">{data.spotify.artist.followers.toLocaleString()} followers</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-400">Releases:</span>
+                      <span className="text-white ml-2">{data.spotify.totalReleases}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Popularity:</span>
+                      <span className="text-white ml-2">{data.spotify.artist.popularity}/100</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {data.spotify.artist.genres.map((genre, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {genre}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-red-400">
+                  <p>❌ Connection failed</p>
+                  <p className="text-sm text-gray-400 mt-1">Check your Spotify credentials</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* YouTube Status */}
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Youtube className="w-6 h-6 text-red-500" />
+                YouTube Integration
+                {youtubeConnected ? (
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                ) : (
+                  <XCircle className="w-5 h-5 text-red-500" />
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {youtubeConnected ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    {data.youtube.channel.image && (
+                      <Image
+                        src={data.youtube.channel.image || "/placeholder.svg"}
+                        alt={data.youtube.channel.name}
+                        width={60}
+                        height={60}
+                        className="rounded-full"
+                      />
+                    )}
+                    <div>
+                      <h4 className="text-white font-semibold">{data.youtube.channel.name}</h4>
+                      <p className="text-red-400">{data.youtube.channel.subscribers.toLocaleString()} subscribers</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-400">Videos:</span>
+                      <span className="text-white ml-2">{data.youtube.channel.videoCount.toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Total Views:</span>
+                      <span className="text-white ml-2">{data.youtube.channel.viewCount.toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <Button size="sm" variant="outline" asChild>
+                    <Link href={data.youtube.channel.youtubeUrl} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      View Channel
                     </Link>
-                  </Card>
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-red-400">
+                  <p>❌ Connection failed</p>
+                  <p className="text-sm text-gray-400 mt-1">Check your YouTube credentials</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Apple Music Status */}
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Apple className="w-6 h-6 text-gray-500" />
+                Apple Music Integration
+                {appleMusicConnected ? (
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                ) : (
+                  <XCircle className="w-5 h-5 text-red-500" />
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {appleMusicConnected ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    {data.appleMusic.artist.image && (
+                      <Image
+                        src={data.appleMusic.artist.image || "/placeholder.svg"}
+                        alt={data.appleMusic.artist.name}
+                        width={60}
+                        height={60}
+                        className="rounded-full"
+                      />
+                    )}
+                    <div>
+                      <h4 className="text-white font-semibold">{data.appleMusic.artist.name}</h4>
+                      <p className="text-gray-400">{data.appleMusic.artist.followers.toLocaleString()} followers</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-400">Releases:</span>
+                      <span className="text-white ml-2">{data.appleMusic.totalReleases}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Popularity:</span>
+                      <span className="text-white ml-2">{data.appleMusic.artist.popularity}/100</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-red-400">
+                  <p>❌ Not fully configured</p>
+                  <p className="text-sm text-gray-400 mt-1">Requires Apple Developer Program and MusicKit setup.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Amazon Music Status */}
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Music className="w-6 h-6 text-orange-500" />
+                Amazon Music Integration
+                {amazonMusicConnected ? (
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                ) : (
+                  <XCircle className="w-5 h-5 text-red-500" />
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {amazonMusicConnected ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    {data.amazonMusic.artist.image && (
+                      <Image
+                        src={data.amazonMusic.artist.image || "/placeholder.svg"}
+                        alt={data.amazonMusic.artist.name}
+                        width={60}
+                        height={60}
+                        className="rounded-full"
+                      />
+                    )}
+                    <div>
+                      <h4 className="text-white font-semibold">{data.amazonMusic.artist.name}</h4>
+                      <p className="text-orange-400">{data.amazonMusic.artist.followers.toLocaleString()} followers</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-400">Releases:</span>
+                      <span className="text-white ml-2">{data.amazonMusic.totalReleases}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Popularity:</span>
+                      <span className="text-white ml-2">{data.amazonMusic.artist.popularity}/100</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-red-400">
+                  <p>❌ Not available</p>
+                  <p className="text-sm text-gray-400 mt-1">No public API for fetching releases.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Configuration Summary */}
+        <Card className="mb-8 bg-gray-800 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white">Configuration Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="text-white font-semibold mb-3">✅ Configured Platforms</h4>
+                <div className="space-y-2 text-sm font-mono">
+                  <div className="text-green-400">✅ SPOTIFY_CLIENT_ID=a471757...28</div>
+                  <div className="text-green-400">✅ SPOTIFY_CLIENT_SECRET=38919f3...25</div>
+                  <div className="text-green-400">✅ SPOTIFY_ARTIST_ID=2UsXLtDjv2GLjXuBqEtNUW</div>
+                  <div className="text-green-400">✅ YOUTUBE_API_KEY=AIzaSyBB9...QPQw</div>
+                  <div className="text-green-400">✅ YOUTUBE_CHANNEL_ID=UCb1pu5LwuxM2GhEKHwkiezg</div>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-white font-semibold mb-3">⚠️ Optional Platforms</h4>
+                <div className="space-y-2 text-sm font-mono">
+                  <div className="text-gray-400">⚪ APPLE_MUSIC_PRIVATE_KEY=Not set</div>
+                  <div className="text-gray-400">⚪ APPLE_MUSIC_KEY_ID=Not set</div>
+                  <div className="text-gray-400">⚪ APPLE_MUSIC_TEAM_ID=Not set</div>
+                  <div className="text-gray-400">⚪ APPLE_MUSIC_ARTIST_ID=Not set</div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Errors */}
+        {data?.errors?.length > 0 && (
+          <Card className="mb-8 bg-red-900/20 border-red-500/30">
+            <CardHeader>
+              <CardTitle className="text-red-400">Issues Found</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-1">
+                {data.errors.map((error, index) => (
+                  <li key={index} className="text-red-300 text-sm">
+                    • {error}
+                  </li>
                 ))}
-          </div>
-        </section>
-      </main>
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-4 justify-center">
+          <Button
+            asChild
+            size="lg"
+            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+          >
+            <Link href="/">
+              <Music className="w-5 h-5 mr-2" />
+              View Live App
+            </Link>
+          </Button>
+
+          <Button onClick={fetchDashboardData} variant="outline" size="lg" disabled={loading}>
+            <RefreshCw className={`w-5 h-5 mr-2 ${loading ? "animate-spin" : ""}`} />
+            Refresh Data
+          </Button>
+
+          <Button asChild variant="outline" size="lg">
+            <Link href="/test-spotify">
+              <Spotify className="w-5 h-5 mr-2" />
+              Test Spotify
+            </Link>
+          </Button>
+
+          <Button asChild variant="outline" size="lg">
+            <Link href="/setup-youtube">
+              <Youtube className="w-5 h-5 mr-2" />
+              Test YouTube
+            </Link>
+          </Button>
+
+          <Button asChild variant="outline" size="lg">
+            <Link href="/test-apple-music">
+              <Apple className="w-5 h-5 mr-2" />
+              Test Apple Music
+            </Link>
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }

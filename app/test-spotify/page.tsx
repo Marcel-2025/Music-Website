@@ -1,167 +1,111 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, AirplayIcon as Spotify } from "lucide-react"
-import Image from "next/image"
-import { toast } from "sonner"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { AirplayIcon as Spotify, CheckCircle, XCircle, Loader2, ExternalLink } from "lucide-react"
 import Link from "next/link"
-
-interface ArtistData {
-  name: string
-  followers: number
-  image: string
-  genres: string[]
-  popularity: number
-  spotifyUrl: string
-}
-
-interface Release {
-  id: string
-  title: string
-  platform: string
-  releaseDate: string
-  streams: string
-  image: string
-  link: string
-  type: string
-  totalTracks?: number
-  artists?: string
-}
+import Image from "next/image"
 
 export default function TestSpotifyPage() {
-  const [loading, setLoading] = useState(false)
-  const [artistData, setArtistData] = useState<ArtistData | null>(null)
-  const [releases, setReleases] = useState<Release[]>([])
-  const [error, setError] = useState<string | null>(null)
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  const handleTestConnection = async () => {
+  useEffect(() => {
+    testSpotifyConnection()
+  }, [])
+
+  const testSpotifyConnection = async () => {
     setLoading(true)
-    setArtistData(null)
-    setReleases([])
-    setError(null)
-
     try {
-      const response = await fetch("/api/spotify")
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to fetch Spotify data.")
-      }
-
-      if (data.success) {
-        setArtistData(data.artistData)
-        setReleases(data.releases)
-        toast.success("Spotify connection successful!")
-      } else {
-        setError(data.message || "Failed to fetch Spotify data.")
-        toast.error(data.message || "Failed to fetch Spotify data.")
-      }
-    } catch (err: any) {
-      setError(err.message || "An unexpected error occurred.")
-      toast.error(`Connection failed: ${err.message}`)
-      console.error("Spotify test error:", err)
+      const res = await fetch("/api/spotify")
+      const result = await res.json()
+      setData(result)
+    } catch (error) {
+      console.error("Failed to test Spotify connection:", error)
+      setData({ success: false, error: "Network error or API route issue." })
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4 dark:bg-gray-950">
-      <Card className="w-full max-w-2xl">
-        <CardHeader className="text-center">
-          <Spotify className="mx-auto h-12 w-12 text-green-500" />
-          <CardTitle className="mt-4 text-2xl">Test Spotify Connection</CardTitle>
-          <CardDescription>Verify your Spotify API keys and artist ID are correctly configured.</CardDescription>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center p-8">
+      <Card className="w-full max-w-2xl bg-gray-800 border-gray-700 text-white">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3 text-2xl">
+            <Spotify className="w-8 h-8 text-green-500" />
+            Spotify Connection Test
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <Button onClick={handleTestConnection} className="w-full" disabled={loading}>
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Test Connection"}
-          </Button>
-
-          {error && (
-            <div className="text-center text-red-500">
-              <p className="font-semibold">Error:</p>
-              <p>{error}</p>
-              <p className="mt-2 text-sm text-gray-500">
-                Please ensure your `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, and `SPOTIFY_ARTIST_ID` environment
-                variables are correctly set in Vercel.
-              </p>
-              <Link href="/setup" className="text-blue-500 hover:underline text-sm mt-2 inline-block">
-                Go to Spotify Setup
-              </Link>
+        <CardContent>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <Loader2 className="w-10 h-10 animate-spin text-green-500 mb-4" />
+              <p className="text-lg">Testing connection...</p>
             </div>
-          )}
-
-          {artistData && (
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold">Artist Data:</h3>
-              <div className="flex items-center space-x-4">
-                <Image
-                  src={artistData.image || "/placeholder-user.png"}
-                  alt={artistData.name}
-                  width={80}
-                  height={80}
-                  className="rounded-full"
-                />
-                <div>
-                  <p className="text-lg font-medium">{artistData.name}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Followers: {artistData.followers.toLocaleString()}
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Popularity: {artistData.popularity}/100</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Genres: {artistData.genres.join(", ")}</p>
-                  <Link
-                    href={artistData.spotifyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:underline text-sm"
-                  >
-                    View on Spotify
-                  </Link>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {releases.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold">Latest Releases:</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {releases.slice(0, 4).map((release) => (
-                  <Card key={release.id}>
-                    <CardContent className="flex items-center space-x-4 p-4">
-                      <Image
-                        src={release.image || "/placeholder.png?height=64&width=64&query=album cover"}
-                        alt={release.title}
-                        width={64}
-                        height={64}
-                        className="rounded-md"
-                      />
-                      <div>
-                        <p className="font-medium">{release.title}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {release.type} by {release.artists}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-500">
-                          {new Date(release.releaseDate).toLocaleDateString()}
-                        </p>
-                        <Link
-                          href={release.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-500 hover:underline text-sm"
-                        >
-                          Listen
-                        </Link>
+          ) : (
+            <div className="space-y-6">
+              {data?.success ? (
+                <div className="text-center">
+                  <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                  <h3 className="text-3xl font-bold text-green-300 mb-2">Connection Successful!</h3>
+                  <p className="text-gray-300">Successfully fetched data for artist:</p>
+                  {data.artist && (
+                    <div className="mt-6 flex flex-col items-center gap-4">
+                      {data.artist.image && (
+                        <Image
+                          src={data.artist.image || "/placeholder.svg"}
+                          alt={data.artist.name}
+                          width={100}
+                          height={100}
+                          className="rounded-full border-2 border-green-500"
+                        />
+                      )}
+                      <h4 className="text-xl font-semibold">{data.artist.name}</h4>
+                      <p className="text-green-400">{data.artist.followers.toLocaleString()} followers</p>
+                      <p className="text-gray-400 text-sm">Popularity: {data.artist.popularity}/100</p>
+                      <div className="flex flex-wrap justify-center gap-2">
+                        {data.artist.genres.map((genre: string, index: number) => (
+                          <span key={index} className="bg-green-900/30 text-green-300 px-2 py-1 rounded-full text-xs">
+                            {genre}
+                          </span>
+                        ))}
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      <Button
+                        asChild
+                        variant="outline"
+                        className="mt-4 text-green-400 border-green-400 hover:bg-green-900/20 bg-transparent"
+                      >
+                        <Link href={data.artist.spotifyUrl} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          View on Spotify
+                        </Link>
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center">
+                  <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                  <h3 className="text-3xl font-bold text-red-300 mb-2">Connection Failed</h3>
+                  <p className="text-gray-300 mb-4">{data?.error || "An unknown error occurred."}</p>
+                  <p className="text-gray-400 text-sm">
+                    Please ensure your `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, and `SPOTIFY_ARTIST_ID` environment
+                    variables are correctly set in Vercel.
+                  </p>
+                  <Button asChild className="mt-6 bg-purple-600 hover:bg-purple-700">
+                    <Link href="/setup">Go to Setup Page</Link>
+                  </Button>
+                </div>
+              )}
             </div>
           )}
+          <div className="flex justify-center mt-8">
+            <Button asChild variant="outline">
+              <Link href="/dashboard">Back to Dashboard</Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

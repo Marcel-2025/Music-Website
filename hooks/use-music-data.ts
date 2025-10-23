@@ -14,7 +14,7 @@ interface Release {
   totalTracks?: number
   artists?: string
   views?: number
-  isNew?: boolean
+  isNew?: boolean // Added for "NEU" badge
 }
 
 interface PlatformStats {
@@ -22,26 +22,22 @@ interface PlatformStats {
     followers: number
     name: string
     connected: boolean
-    error?: string
   }
   youtube?: {
     subscribers: number
     videoCount: number
     name: string
     connected: boolean
-    error?: string
   }
   appleMusic?: {
     followers: number
     name: string
     connected: boolean
-    error?: string
   }
   amazonMusic?: {
     followers: number
     name: string
     connected: boolean
-    error?: string
   }
 }
 
@@ -69,41 +65,44 @@ export function useMusicData(): MusicData {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchMusicData = useCallback(async () => {
-    setLoading(true)
-    setError(null)
+  const fetchAllData = useCallback(async () => {
     try {
+      setLoading(true)
       const response = await fetch("/api/releases")
       const data = await response.json()
 
-      if (!response.ok) {
-        setError(data.error || "An unknown error occurred while fetching music data.")
-        setReleases([])
-        setPlatformStats({})
-        setArtistData(null)
-        return
-      }
+      if (data.releases) {
+        // Mark releases as new if they are recent (e.g., within the last 30 days)
+        const updatedReleases = data.releases.map((release: Release) => ({
+          ...release,
+          isNew: new Date(release.releaseDate) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        }))
+        setReleases(updatedReleases || [])
+        setPlatformStats(data.platformStats || {})
 
-      setReleases(data.releases || [])
-      setPlatformStats(data.platformStats || {})
-      setArtistData(data.artistData || null)
-      if (data.error) {
-        setError(data.error) // Set partial error if some data loaded but with issues
+        // Get artist data from Spotify if available
+        if (data.platformStats?.spotify?.connected) {
+          const spotifyResponse = await fetch("/api/spotify")
+          const spotifyData = await spotifyResponse.json()
+          if (spotifyData.success) {
+            setArtistData(spotifyData.artist)
+          }
+        }
+        setError(null)
+      } else {
+        setError(data.error || "Failed to fetch release data")
       }
-    } catch (err: any) {
-      console.error("Failed to fetch music data:", err)
-      setError(`Failed to fetch music data: ${err.message}`)
-      setReleases([])
-      setPlatformStats({})
-      setArtistData(null)
+    } catch (err) {
+      setError("Failed to connect to APIs")
+      console.error("API fetch error:", err)
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    fetchMusicData()
-  }, [fetchMusicData])
+    fetchAllData()
+  }, [fetchAllData])
 
-  return { releases, platformStats, artistData, loading, error, refetch: fetchMusicData }
+  return { releases, platformStats, artistData, loading, error, refetch: fetchAllData }
 }
