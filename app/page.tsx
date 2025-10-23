@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 import { useMusicData } from "@/hooks/use-music-data"
 import { useState } from "react"
+import { VisitorCounter } from "@/components/visitor-counter"
 
 interface Release {
   id: string
@@ -73,14 +74,13 @@ interface ArtistData {
 export default function EhhmsPortfolio() {
   const { releases, platformStats, artistData, loading, error, refetch: fetchAllData } = useMusicData()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [selectedRelease, setSelectedRelease] = useState<Release | null>(null)
 
   const socialLinks = [
     { name: "Instagram", icon: Instagram, url: "https://instagram.com/ehhm.s", handle: "@ehhm.s" },
-    { name: "Twitter", icon: Twitter, url: "https://twitter.com/ehhms", handle: "@ehhms" },
+    { name: "Twitter", icon: Twitter, url: "https://x.com/MonTwonnow", handle: "@MonTwonnow" },
     { name: "YouTube", icon: Youtube, url: "https://youtube.com/@ehhms", handle: "@ehhms" },
     { name: "SoundCloud", icon: SoundCloud, url: "https://soundcloud.com/ehhms", handle: "ehhm.s" },
-    { name: "Facebook", icon: Facebook, url: "https://facebook.com/ehhms", handle: "Ehhm.s" },
+    { name: "Facebook", icon: Facebook, url: "https://www.facebook.com/Baron.Ehhm", handle: "Baron.Ehhm" },
   ]
 
   const getPlatformIcon = (platform: string) => {
@@ -548,9 +548,10 @@ export default function EhhmsPortfolio() {
         </div>
       </section>
 
-      {/* Mobile-optimized Footer */}
+      {/* Mobile-optimized Footer with Visitor Counter */}
       <footer className="border-t border-gray-800 py-6 md:py-8 px-4">
-        <div className="container mx-auto text-center">
+        <div className="container mx-auto text-center space-y-4">
+          <VisitorCounter />
           <p className="text-gray-400 mb-2 md:mb-4 text-sm md:text-base">
             © 2025 {artistData?.name || "Ehhm.s"}. All rights reserved.
           </p>
