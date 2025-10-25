@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 
 interface VisitorCountData {
   count: number
@@ -9,48 +9,42 @@ interface VisitorCountData {
   error: string | null
 }
 
-export function useVisitorCount() {
-  const [data, setData] = useState<VisitorCountData>({
-    count: 0,
-    isNewVisitor: false,
-    loading: true,
-    error: null,
-  })
+export function useVisitorCount(): VisitorCountData {
+  const [count, setCount] = useState(0)
+  const [isNewVisitor, setIsNewVisitor] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    async function fetchVisitorCount() {
+    const fetchVisitorCount = async () => {
       try {
-        const response = await fetch("/api/visitor-count")
-        const result = await response.json()
-
-        if (result.success) {
-          setData({
-            count: result.count,
-            isNewVisitor: result.isNewVisitor,
-            loading: false,
-            error: null,
-          })
-        } else {
-          setData({
-            count: 0,
-            isNewVisitor: false,
-            loading: false,
-            error: result.error || "Failed to load visitor count",
-          })
-        }
-      } catch (error) {
-        console.error("Error fetching visitor count:", error)
-        setData({
-          count: 0,
-          isNewVisitor: false,
-          loading: false,
-          error: "Failed to load visitor count",
+        setLoading(true)
+        const response = await fetch("/api/visitor-count", {
+          cache: "no-store",
         })
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch visitor count")
+        }
+
+        const data = await response.json()
+
+        if (data.success) {
+          setCount(data.count)
+          setIsNewVisitor(data.isNewVisitor)
+        } else {
+          setError(data.error || "Unknown error")
+        }
+      } catch (err) {
+        console.error("Error fetching visitor count:", err)
+        setError(err instanceof Error ? err.message : "Failed to load visitor count")
+      } finally {
+        setLoading(false)
       }
     }
 
     fetchVisitorCount()
   }, [])
 
-  return data
+  return { count, isNewVisitor, loading, error }
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useVisitorCount } from "@/hooks/use-visitor-count"
-import { Eye, Loader2 } from "lucide-react"
+import { Eye, Loader2, Users } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 export function VisitorCounter() {
@@ -9,28 +9,32 @@ export function VisitorCounter() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-gray-400 text-sm">
+      <div className="flex items-center justify-center gap-2 text-gray-400">
         <Loader2 className="w-4 h-4 animate-spin" />
-        <span>Loading visitors...</span>
+        <span className="text-sm">Loading visitor count...</span>
       </div>
     )
   }
 
   if (error) {
-    return null
+    return (
+      <div className="flex items-center justify-center gap-2 text-gray-500">
+        <Eye className="w-4 h-4" />
+        <span className="text-sm">Visitor tracking unavailable</span>
+      </div>
+    )
   }
 
   return (
-    <div className="flex items-center gap-3 justify-center flex-wrap">
+    <div className="flex flex-col items-center gap-2">
       <div className="flex items-center gap-2">
-        <Eye className="w-4 h-4 text-purple-400" />
-        <span className="text-gray-300 text-sm">
-          <span className="font-semibold text-white">{count.toLocaleString()}</span> Besucher
-        </span>
+        <Users className="w-5 h-5 text-purple-400" />
+        <span className="text-lg font-semibold text-white">{count.toLocaleString()}</span>
+        <span className="text-sm text-gray-400">Besucher</span>
       </div>
       {isNewVisitor && (
-        <Badge variant="outline" className="text-green-400 border-green-400 text-xs">
-          Du bist Besucher #{count}! 🎉
+        <Badge variant="outline" className="text-xs text-green-400 border-green-400">
+          🎉 Du bist Besucher #{count}!
         </Badge>
       )}
     </div>

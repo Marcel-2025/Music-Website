@@ -1,118 +1,78 @@
 import { NextResponse } from "next/server"
 
 export async function GET() {
-  // Amazon Music does not have a public API for fetching artist releases or stats.
-  // This route is a placeholder and will always return an empty array and disconnected status.
-  // For demonstration, we'll return mock data with functional links.
-  const mockReleases = [
-    {
-      id: "amz1",
-      title: "Industrial Night",
-      platform: "Amazon Music",
-      releaseDate: "2025-07-30", // Future date to show as "NEW"
-      streams: "N/A",
-      image: "/placeholder.svg?height=300&width=300",
-      link: "https://music.amazon.de/albums/B0F89B4G8H", // Generic Amazon Music album link for Ehhm.s
-      type: "Single",
-      totalTracks: 1,
-      artists: "Ehhm.s",
-    },
-    {
-      id: "amz2",
-      title: "Dawn of Emotions",
-      platform: "Amazon Music",
-      releaseDate: "2025-06-15",
-      streams: "N/A",
-      image: "/placeholder.svg?height=300&width=300",
-      link: "https://music.amazon.de/albums/B0F89B4G8H",
-      type: "Single",
-      totalTracks: 1,
-      artists: "Ehhm.s",
-    },
-    {
-      id: "amz3",
-      title: "Dopamine Loops",
-      platform: "Amazon Music",
-      releaseDate: "2025-05-01",
-      streams: "N/A",
-      image: "/placeholder.svg?height=300&width=300",
-      link: "https://music.amazon.de/albums/B0F89B4G8H",
-      type: "Single",
-      totalTracks: 1,
-      artists: "Ehhm.s",
-    },
-    {
-      id: "amz4",
-      title: "Feel the Energy",
-      platform: "Amazon Music",
-      releaseDate: "2025-04-20",
-      streams: "N/A",
-      image: "/placeholder.svg?height=300&width=300",
-      link: "https://music.amazon.de/albums/B0F89B4G8H",
-      type: "Single",
-      totalTracks: 1,
-      artists: "Ehhm.s",
-    },
-    {
-      id: "amz5",
-      title: "Festival Rising",
-      platform: "Amazon Music",
-      releaseDate: "2025-03-10",
-      streams: "N/A",
-      image: "/placeholder.svg?height=300&width=300",
-      link: "https://music.amazon.de/albums/B0F89B4G8H",
-      type: "Single",
-      totalTracks: 1,
-      artists: "Ehhm.s",
-    },
-    {
-      id: "amz6",
-      title: "Eternal Echoes",
-      platform: "Amazon Music",
-      releaseDate: "2025-02-05",
-      streams: "N/A",
-      image: "/placeholder.svg?height=300&width=300",
-      link: "https://music.amazon.de/albums/B0F89B4G8H",
-      type: "Single",
-      totalTracks: 1,
-      artists: "Ehhm.s",
-    },
-    {
-      id: "amz7",
-      title: "Euphoric Rave",
-      platform: "Amazon Music",
-      releaseDate: "2025-01-20",
-      streams: "N/A",
-      image: "/placeholder.svg?height=300&width=300",
-      link: "https://music.amazon.de/albums/B0F89B4G8H",
-      type: "Single",
-      totalTracks: 1,
-      artists: "Ehhm.s",
-    },
-    {
-      id: "amz8",
-      title: "Echoes of Minimalismus",
-      platform: "Amazon Music",
-      releaseDate: "2024-12-01",
-      streams: "N/A",
-      image: "/placeholder.svg?height=300&width=300",
-      link: "https://music.amazon.de/albums/B0F89B4G8H",
-      type: "Single",
-      totalTracks: 1,
-      artists: "Ehhm.s",
-    },
-  ]
+  try {
+    // Try to get Spotify data to mirror the same releases
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+    const spotifyResponse = await fetch(`${baseUrl}/api/spotify`, {
+      cache: "no-store",
+    })
 
-  return NextResponse.json({
-    success: true,
-    releases: mockReleases,
-    artist: {
+    let amazonMusicReleases = []
+    let artistInfo = {
       name: "Ehhm.s",
-      followers: 12345, // Mock followers for display
+      followers: 6200,
       image: "/placeholder.svg?height=200&width=200",
-      genres: ["Electronic", "Ambient", "Synthwave"],
-      popularity: 75, // Mock popularity
-    },
-    connected: true, // Indicate connection for UI purposes
-  })
+      genres: ["Electronic", "Bass Music"],
+      popularity: 62,
+    }
+
+    if (spotifyResponse.ok) {
+      const spotifyData = await spotifyResponse.json()
+
+      if (spotifyData.success && spotifyData.releases) {
+        // Convert Spotify releases to Amazon Music format
+        amazonMusicReleases = spotifyData.releases.map((release: any) => ({
+          id: `amz-${release.id}`,
+          title: release.title,
+          platform: "Amazon Music",
+          releaseDate: release.releaseDate,
+          streams: release.streams,
+          image: release.image,
+          // Generate Amazon Music search link based on song title and artist
+          link: `https://music.amazon.com/search/${encodeURIComponent(release.title + " Ehhm.s")}`,
+          type: release.type || "Album",
+          totalTracks: release.totalTracks,
+          artists: release.artists || "Ehhm.s",
+        }))
+
+        // Use Spotify artist info as base
+        if (spotifyData.artist) {
+          artistInfo = {
+            name: spotifyData.artist.name || "Ehhm.s",
+            followers: Math.floor((spotifyData.artist.followers || 6200) * 0.7), // Approximate Amazon followers
+            image: spotifyData.artist.image || "/placeholder.svg?height=200&width=200",
+            genres: spotifyData.artist.genres || ["Electronic", "Bass Music"],
+            popularity: Math.floor((spotifyData.artist.popularity || 62) * 0.9),
+          }
+        }
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      releases: amazonMusicReleases,
+      artist: artistInfo,
+      connected: true,
+      note: "Releases mirrored from Spotify. Links are Amazon Music search links.",
+    })
+  } catch (error) {
+    console.error("Amazon Music API Error:", error)
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to fetch Amazon Music data",
+        releases: [],
+        artist: {
+          name: "Ehhm.s",
+          followers: 0,
+          image: "/placeholder.svg?height=200&width=200",
+          genres: [],
+          popularity: 0,
+        },
+        connected: false,
+      },
+      { status: 500 },
+    )
+  }
 }
