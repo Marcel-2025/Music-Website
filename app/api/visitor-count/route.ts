@@ -1,41 +1,58 @@
-import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
+import { type NextRequest, NextResponse } from "next/server"
 
-// In-memory counter (resets on deployment)
-// For production, use Vercel KV or a database
+// In-memory storage (will reset on deployment)
 let visitorCount = 0
-const visitedIPs = new Set<string>()
+const visitors = new Set<string>()
 
-export async function GET(request: Request) {
-  const cookieStore = await cookies()
-  const hasVisited = cookieStore.get("visited")
+export async function GET(request: NextRequest) {
+  try {
+    const visitorId = request.cookies.get("visitor_id")?.value
 
-  // Get IP address for additional uniqueness check
-  const forwarded = request.headers.get("x-forwarded-for")
-  const ip = forwarded ? forwarded.split(",")[0] : "unknown"
-
-  let isNewVisitor = false
-
-  // If no cookie and IP hasn't been seen, increment counter
-  if (!hasVisited && !visitedIPs.has(ip)) {
-    visitorCount++
-    visitedIPs.add(ip)
-    isNewVisitor = true
-  }
-
-  const response = NextResponse.json({
-    count: visitorCount,
-    isNewVisitor,
-  })
-
-  // Set cookie if not already set
-  if (!hasVisited) {
-    response.cookies.set("visited", "true", {
-      maxAge: 60 * 60 * 24 * 365, // 1 year
-      httpOnly: true,
-      sameSite: "strict",
+    return NextResponse.json({
+      count: visitorCount,
+      isNewVisitor: !visitorId || !visitors.has(visitorId),
     })
+  } catch (error) {
+    console.error("Error fetching visitor count:", error)
+    return NextResponse.json({ count: 0, isNewVisitor: false }, { status: 500 })
   }
+}
 
-  return response
+export async function POST(request: NextRequest) {
+  try {
+    let visitorId = request.cookies.get("visitor_id")?.value
+
+    // Generate new visitor ID if doesn't exist
+    if (!visitorId) {
+      visitorId = `visitor_${Date.now()}_${Math.random().toString(36).substring(7)}`
+    }
+
+    // Only count if this visitor hasn't been counted before
+    if (!visitors.has(visitorId)) {
+      visitors.add(visitorId)
+      visitorCount++
+
+      const response = NextResponse.json({
+        count: visitorCount,
+        isNewVisitor: true,
+      })
+
+      // Set cookie that expires in 30 days
+      response.cookies.set("visitor_id", visitorId, {
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        httpOnly: true,
+        sameSite: "lax",
+      })
+
+      return response
+    }
+
+    return NextResponse.json({
+      count: visitorCount,
+      isNewVisitor: false,
+    })
+  } catch (error) {
+    console.error("Error updating visitor count:", error)
+    return NextResponse.json({ count: visitorCount, isNewVisitor: false }, { status: 500 })
+  }
 }

@@ -12,7 +12,7 @@ import {
   Twitter,
   Youtube,
   Facebook,
-  SproutIcon as Spotify,
+  Music2,
   Apple,
   DownloadCloud as SoundCloud,
   Loader2,
@@ -79,14 +79,14 @@ export default function EhhmsPortfolio() {
     { name: "Instagram", icon: Instagram, url: "https://instagram.com/ehhm.s", handle: "@ehhm.s" },
     { name: "Twitter", icon: Twitter, url: "https://x.com/MonTwonnow", handle: "@MonTwonnow" },
     { name: "YouTube", icon: Youtube, url: "https://youtube.com/@ehhms", handle: "@ehhms" },
-    { name: "SoundCloud", icon: SoundCloud, url: "https://soundcloud.com/ehhms", handle: "ehhm.s" },
+    { name: "SoundCloud", icon: SoundCloud, url: "https://soundcloud.com/ehhm-s", handle: "ehhm-s" },
     { name: "Facebook", icon: Facebook, url: "https://www.facebook.com/Baron.Ehhm", handle: "Baron.Ehhm" },
   ]
 
   const getPlatformIcon = (platform: string) => {
     switch (platform) {
       case "Spotify":
-        return Spotify
+        return Music2
       case "YouTube":
         return Youtube
       case "Apple Music":
@@ -299,63 +299,85 @@ export default function EhhmsPortfolio() {
               Electronic Music Producer & Sound Designer crafting immersive sonic experiences
             </p>
 
-            {/* Compact Platform Stats for Mobile */}
-            <div className="grid grid-cols-2 md:flex md:flex-wrap justify-center gap-3 md:gap-6 mb-4 md:mb-6 text-xs md:text-sm">
+            {/* Platform Stats - Now visible on Desktop */}
+            <div className="flex flex-wrap justify-center gap-3 md:gap-6 mb-4 md:mb-6">
               {platformStats.spotify?.connected && (
-                <div className="flex items-center gap-1 md:gap-2 justify-center">
-                  <Spotify className="w-4 h-4 md:w-5 md:h-5 text-green-400" />
-                  <span className="text-green-400 font-semibold">
-                    {platformStats.spotify.followers.toLocaleString()}
+                <div className="flex items-center gap-2 bg-green-500/10 px-3 md:px-4 py-2 rounded-full border border-green-500/30">
+                  <Music2 className="w-4 h-4 md:w-5 md:h-5 text-green-400" />
+                  <span className="text-green-400 font-semibold text-xs md:text-sm">
+                    {platformStats.spotify.followers.toLocaleString()} Spotify Followers
                   </span>
                 </div>
               )}
               {platformStats.youtube?.connected && (
-                <div className="flex items-center gap-1 md:gap-2 justify-center">
+                <div className="flex items-center gap-2 bg-red-500/10 px-3 md:px-4 py-2 rounded-full border border-red-500/30">
                   <Youtube className="w-4 h-4 md:w-5 md:h-5 text-red-400" />
-                  <span className="text-red-400 font-semibold">
-                    {platformStats.youtube.subscribers.toLocaleString()}
+                  <span className="text-red-400 font-semibold text-xs md:text-sm">
+                    {platformStats.youtube.subscribers.toLocaleString()} YouTube Subscribers
                   </span>
                 </div>
               )}
               {platformStats.appleMusic?.connected && (
-                <div className="flex items-center gap-1 md:gap-2 justify-center">
+                <div className="flex items-center gap-2 bg-gray-500/10 px-3 md:px-4 py-2 rounded-full border border-gray-500/30">
                   <Apple className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
-                  <span className="text-gray-400 font-semibold">
-                    {platformStats.appleMusic.followers.toLocaleString()}
+                  <span className="text-gray-400 font-semibold text-xs md:text-sm">
+                    {platformStats.appleMusic.followers.toLocaleString()} Apple Music Followers
                   </span>
                 </div>
               )}
               {platformStats.amazonMusic?.connected && (
-                <div className="flex items-center gap-1 md:gap-2 justify-center">
+                <div className="flex items-center gap-2 bg-orange-500/10 px-3 md:px-4 py-2 rounded-full border border-orange-500/30">
                   <Music className="w-4 h-4 md:w-5 md:h-5 text-orange-400" />
-                  <span className="text-orange-400 font-semibold">
-                    {platformStats.amazonMusic.followers.toLocaleString()}
+                  <span className="text-orange-400 font-semibold text-xs md:text-sm">
+                    {platformStats.amazonMusic.followers.toLocaleString()} Amazon Music Followers
                   </span>
                 </div>
               )}
             </div>
 
-            <div className="flex flex-wrap justify-center gap-2 mb-6 md:mb-8 px-4">
+            {artistData && (
+              <p className="text-gray-400 text-xs md:text-sm mb-4 md:mb-6">
+                Popularity Score: {artistData.popularity}/100
+              </p>
+            )}
+
+            {/* Genre Badges - Now more prominent on Desktop */}
+            <div className="flex flex-wrap justify-center gap-2 md:gap-3 mb-6 md:mb-8 px-4">
               {artistData?.genres.length > 0 ? (
                 artistData.genres.map((genre, index) => (
                   <Badge
                     key={index}
                     variant="secondary"
-                    className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs"
+                    className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs md:text-sm px-3 md:px-4 py-1 md:py-2"
                   >
                     {genre}
                   </Badge>
                 ))
               ) : (
                 <>
-                  <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs">
+                  <Badge
+                    variant="secondary"
+                    className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs md:text-sm px-3 md:px-4 py-1 md:py-2"
+                  >
                     Electronic
                   </Badge>
-                  <Badge variant="secondary" className="bg-blue-500/20 text-blue-300 border-blue-500/30 text-xs">
+                  <Badge
+                    variant="secondary"
+                    className="bg-blue-500/20 text-blue-300 border-blue-500/30 text-xs md:text-sm px-3 md:px-4 py-1 md:py-2"
+                  >
                     Synthwave
                   </Badge>
-                  <Badge variant="secondary" className="bg-pink-500/20 text-pink-300 border-pink-500/30 text-xs">
+                  <Badge
+                    variant="secondary"
+                    className="bg-pink-500/20 text-pink-300 border-pink-500/30 text-xs md:text-sm px-3 md:px-4 py-1 md:py-2"
+                  >
                     Ambient
+                  </Badge>
+                  <Badge
+                    variant="secondary"
+                    className="bg-green-500/20 text-green-300 border-green-500/30 text-xs md:text-sm px-3 md:px-4 py-1 md:py-2"
+                  >
+                    Bass Music
                   </Badge>
                 </>
               )}
@@ -373,7 +395,7 @@ export default function EhhmsPortfolio() {
           {spotifyReleases.length > 0 && (
             <div className="mb-8 md:mb-12">
               <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
-                <Spotify className="w-6 h-6 md:w-8 md:h-8 text-green-400" />
+                <Music2 className="w-6 h-6 md:w-8 md:h-8 text-green-400" />
                 <h4 className="text-lg md:text-2xl font-semibold text-white">Spotify</h4>
                 <Badge variant="outline" className="text-green-400 border-green-400 text-xs">
                   {spotifyReleases.length}
@@ -461,7 +483,7 @@ export default function EhhmsPortfolio() {
                   platformStats.spotify?.connected ? "bg-green-500" : "bg-gray-600"
                 }`}
               >
-                <Spotify className="w-6 h-6 md:w-8 md:h-8 text-white" />
+                <Music2 className="w-6 h-6 md:w-8 md:h-8 text-white" />
               </div>
               <h4 className="text-white font-semibold text-sm md:text-base">Spotify</h4>
               <p className="text-gray-400 text-xs md:text-sm">
