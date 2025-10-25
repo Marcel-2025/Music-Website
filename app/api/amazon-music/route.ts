@@ -22,6 +22,7 @@ export async function GET() {
 
       if (spotifyData.success && spotifyData.releases) {
         // Convert Spotify releases to Amazon Music format
+        // All links point to the artist profile on Amazon Music
         amazonMusicReleases = spotifyData.releases.map((release: any) => ({
           id: `amz-${release.id}`,
           title: release.title,
@@ -29,8 +30,7 @@ export async function GET() {
           releaseDate: release.releaseDate,
           streams: release.streams,
           image: release.image,
-          // Generate Amazon Music search link based on song title and artist
-          link: `https://music.amazon.com/search/${encodeURIComponent(release.title + " Ehhm.s")}`,
+          link: "https://music.amazon.de/browse/music-items/artist/B0F89B4G8H/chronological-albums",
           type: release.type || "Album",
           totalTracks: release.totalTracks,
           artists: release.artists || "Ehhm.s",
@@ -54,7 +54,7 @@ export async function GET() {
       releases: amazonMusicReleases,
       artist: artistInfo,
       connected: true,
-      note: "Releases mirrored from Spotify. Links are Amazon Music search links.",
+      note: "Releases mirrored from Spotify. All links point to Amazon Music artist profile.",
     })
   } catch (error) {
     console.error("Amazon Music API Error:", error)

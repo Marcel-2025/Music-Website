@@ -27,6 +27,7 @@ export async function GET() {
 
       if (spotifyData.success && spotifyData.releases) {
         // Convert Spotify releases to Apple Music format
+        // All links point to the artist profile on Apple Music
         appleMusicReleases = spotifyData.releases.map((release: any) => ({
           id: `am-${release.id}`,
           title: release.title,
@@ -34,8 +35,7 @@ export async function GET() {
           releaseDate: release.releaseDate,
           streams: release.streams,
           image: release.image,
-          // Generate Apple Music search link based on song title and artist
-          link: `https://music.apple.com/search?term=${encodeURIComponent(release.title + " Ehhm.s")}`,
+          link: "https://music.apple.com/us/artist/ehhm-s/1813716914/see-all?section=singles",
           type: release.type || "Album",
           totalTracks: release.totalTracks,
           artists: release.artists || "Ehhm.s",
@@ -59,7 +59,7 @@ export async function GET() {
       releases: appleMusicReleases,
       artist: artistInfo,
       connected: true,
-      note: "Releases mirrored from Spotify. Links are Apple Music search links.",
+      note: "Releases mirrored from Spotify. All links point to Apple Music artist profile.",
     })
   } catch (error) {
     console.error("Apple Music API Error:", error)
