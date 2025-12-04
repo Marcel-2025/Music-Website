@@ -1,58 +1,59 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { kv } from "@vercel/kv"
+import { NextResponse } from "next/server"
 
-// In-memory storage (will reset on deployment)
-let visitorCount = 0
-const visitors = new Set<string>()
+const VISITOR_COUNT_KEY = "visitor_count"
+const VISITOR_SET_KEY = "visitor_set"
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const visitorId = request.cookies.get("visitor_id")?.value
+    const count = (await kv.get<number>(VISITOR_COUNT_KEY)) || 0
 
     return NextResponse.json({
-      count: visitorCount,
-      isNewVisitor: !visitorId || !visitors.has(visitorId),
+      success: true,
+      count,
     })
   } catch (error) {
-    console.error("Error fetching visitor count:", error)
-    return NextResponse.json({ count: 0, isNewVisitor: false }, { status: 500 })
+    console.error("Error getting visitor count:", error)
+    return NextResponse.json({ success: false, error: "Failed to get visitor count" }, { status: 500 })
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    let visitorId = request.cookies.get("visitor_id")?.value
+    const body = await request.json()
+    const visitorId = body.visitorId
 
-    // Generate new visitor ID if doesn't exist
     if (!visitorId) {
-      visitorId = `visitor_${Date.now()}_${Math.random().toString(36).substring(7)}`
+      return NextResponse.json({ success: false, error: "Visitor ID required" }, { status: 400 })
     }
 
-    // Only count if this visitor hasn't been counted before
-    if (!visitors.has(visitorId)) {
-      visitors.add(visitorId)
-      visitorCount++
+    // Check if visitor has been counted before
+    const isExistingVisitor = await kv.sismember(VISITOR_SET_KEY, visitorId)
 
-      const response = NextResponse.json({
-        count: visitorCount,
-        isNewVisitor: true,
+    if (!isExistingVisitor) {
+      // Add visitor to set
+      await kv.sadd(VISITOR_SET_KEY, visitorId)
+
+      // Increment counter
+      const newCount = await kv.incr(VISITOR_COUNT_KEY)
+
+      return NextResponse.json({
+        success: true,
+        count: newCount,
+        isNew: true,
       })
-
-      // Set cookie that expires in 30 days
-      response.cookies.set("visitor_id", visitorId, {
-        maxAge: 60 * 60 * 24 * 30, // 30 days
-        httpOnly: true,
-        sameSite: "lax",
-      })
-
-      return response
     }
+
+    // Return current count for existing visitor
+    const count = (await kv.get<number>(VISITOR_COUNT_KEY)) || 0
 
     return NextResponse.json({
-      count: visitorCount,
-      isNewVisitor: false,
+      success: true,
+      count,
+      isNew: false,
     })
   } catch (error) {
     console.error("Error updating visitor count:", error)
-    return NextResponse.json({ count: visitorCount, isNewVisitor: false }, { status: 500 })
+    return NextResponse.json({ success: false, error: "Failed to update visitor count" }, { status: 500 })
   }
 }
